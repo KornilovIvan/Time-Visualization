@@ -26,7 +26,7 @@ const ICON_TAIL_RE = /(?:\s*\|)*\s*(?:🗓️|🕐|⏰|📅|⌛)\s*$/u;
 
 // Obsidian tag: (?<![\w]) rejects heading links (note#heading) and glued words,
 // (?!\d) — a tag can't start with a digit
-const TAG_RE = /(?<![\w])#(?!\d)([\p{L}][\p{L}\p{N}_\/\-]*)/gu;
+const TAG_RE = /(?<![\w])#(?!\d)([\p{L}][\p{L}\p{N}_/-]*)/gu;
 
 /** Parses one line. Returns null if it's not a task. */
 export function parseTaskLine(

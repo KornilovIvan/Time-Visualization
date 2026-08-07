@@ -2,7 +2,7 @@
 	"id": "time-visualization",
 	"name": "Time Visualization",
 	"version": "1.0.0",
-	"minAppVersion": "1.4.0",
+	"minAppVersion": "1.4.10",
 	"description": "Day cards with smooth zoom between day, week and month views.",
 	"author": "ivankornilov",
 	"isDesktopOnly": true

@@ -124,8 +124,8 @@ export default class TimeVisualizationPlugin extends Plugin {
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new TimeVisualizationView(leaf, this));
 
     this.addCommand({
-      id: "open-time-visualization",
-      name: "Open Time Visualization",
+      id: "open",
+      name: "Open",
       callback: () => {
         void this.activateView();
       },
@@ -210,12 +210,12 @@ export default class TimeVisualizationPlugin extends Plugin {
   async activateView(): Promise<void> {
     const existing = this.app.workspace.getLeavesOfType(VIEW_TYPE);
     if (existing.length > 0) {
-      this.app.workspace.revealLeaf(existing[0]);
+      this.app.workspace.setActiveLeaf(existing[0], { focus: true });
       return;
     }
     const leaf = this.app.workspace.getLeaf(true);
     await leaf.setViewState({ type: VIEW_TYPE, active: true });
-    this.app.workspace.revealLeaf(leaf);
+    this.app.workspace.setActiveLeaf(leaf, { focus: true });
   }
 }
 
