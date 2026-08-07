@@ -1,0 +1,13 @@
+# Build artifacts
+main.js
+*.map
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
+
+# Demo media (only the gif is committed)
+assets/demo.mov
+assets/palette.png
