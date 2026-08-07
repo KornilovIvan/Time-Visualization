@@ -29,10 +29,15 @@ Any standard Obsidian task line with a date (and optional time) inline field is 
 Rules:
 
 - Task markers: `- [ ]` / `- [x]` (also with `*`, and inside blockquotes `> `).
-- `[date:: YYYY-MM-DD]` — required for the task to appear on a date.
-- `[time:: HH:MM]` — optional, used for sorting within a day.
+- A date is required for the task to appear on a day; a time is optional and used for sorting.
 - Tags (`#math`, `#sql`, …) are shown as chips; in the week/month views they are hidden to save space.
 - Tasks are grouped by the note they live in; click a group name to open the note.
+
+The date/time format is chosen in the plugin settings:
+
+- **Inline fields** (default): `[date:: YYYY-MM-DD]` / `[time:: HH:MM]`.
+- **Tasks plugin**: `📅 YYYY-MM-DD` (due) / `⏰ HH:MM` (time) — compatible with [Obsidian Tasks](https://github.com/obsidian-tasks-group/obsidian-tasks).
+- **Custom regex**: your own pattern with named groups `date` and `time`, e.g. `📅 (?<date>\d{4}-\d{2}-\d{2})`. Tasks are read-only in this mode (editing and moving are disabled).
 
 ## Usage
 

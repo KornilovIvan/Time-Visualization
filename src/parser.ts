@@ -1,8 +1,13 @@
 /**
- * Task-line parser for the user's format:
- *   - [ ] #math ... |[date:: 2026-08-05]
- *   - [x] #sql ... |[date:: 2026-08-05] |[time:: 09:00]
+ * Task-line parser.
+ *
+ * Supported date formats:
+ *   - legacy: inline fields `|[date:: 2026-08-05]` / `|[time:: 09:00]`
+ *   - tasks:  Obsidian Tasks emoji fields `📅 2026-08-05` / `⏰ 09:00`
+ *   - custom: a user-provided regex with named groups `date` and `time`
  */
+
+export type DateFormat = "legacy" | "tasks" | "custom";
 
 export interface ParsedTask {
   filePath: string;
@@ -13,15 +18,21 @@ export interface ParsedTask {
   tags: string[];
   date?: string;
   time?: string;
+  /** Format used to extract date/time (needed to write back in the same format) */
+  format: DateFormat;
 }
 
 // Task line: optional quote/callout prefix "> " (also nested)
 const TASK_RE = /^\s*(?:>\s*)*[-*]\s+\[( |x|X)\]\s+(.*)$/;
 
-// Inline fields [date:: ...] / [time:: ...]
+// Legacy inline fields [date:: ...] / [time:: ...]
 const INLINE_RE = /\[(date|time)::\s*([^\]]*)\]/g;
 
-// Calendar/time icon left at the end of the text after inline-field removal (u-flag for emoji)
+// Tasks plugin fields: 📅 due date, ⏰ time
+const TASKS_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/;
+const TASKS_TIME_RE = /⏰\s*(\d{1,2}:\d{2})/;
+
+// Calendar/time icon left at the end of the text after field removal (u-flag for emoji)
 const ICON_TAIL_RE = /(?:\s*\|)*\s*(?:🗓️|🕐|⏰|📅|⌛)\s*$/u;
 
 // Obsidian tag: (?<![\w]) rejects heading links (note#heading) and glued words,
@@ -32,7 +43,9 @@ const TAG_RE = /(?<![\w])#(?!\d)([\p{L}][\p{L}\p{N}_/-]*)/gu;
 export function parseTaskLine(
   raw: string,
   filePath: string,
-  line: number
+  line: number,
+  dateFormat: DateFormat = "legacy",
+  customDateRegex = ""
 ): ParsedTask | null {
   const m = TASK_RE.exec(raw);
   if (!m) return null;
@@ -43,19 +56,49 @@ export function parseTaskLine(
   let date: string | undefined;
   let time: string | undefined;
 
-  // Extract trailing inline fields [date:: ...] / [time:: ...]
-  text = text.replace(INLINE_RE, (full, key: string, value: string) => {
-    const v = value.trim();
-    if (v) {
-      if (key === "date") date = v;
-      else if (key === "time") time = v;
+  if (dateFormat === "tasks") {
+    text = text.replace(TASKS_DATE_RE, (full, d: string) => {
+      date = d;
+      return "";
+    });
+    text = text.replace(TASKS_TIME_RE, (full, t: string) => {
+      time = t;
+      return "";
+    });
+  } else if (dateFormat === "custom" && customDateRegex) {
+    try {
+      const re = new RegExp(customDateRegex);
+      const cm = re.exec(text);
+      if (cm?.groups) {
+        if (cm.groups.date) date = cm.groups.date.trim();
+        if (cm.groups.time) time = cm.groups.time.trim();
+        // Only strip the matched fields if something was actually extracted —
+        // otherwise a regex without named groups would eat text for nothing
+        if ((date || time) && cm[0]) text = text.replace(re, "");
+      }
+    } catch {
+      // invalid regex — just skip date extraction
     }
-    return "";
-  });
+  } else {
+    // legacy inline fields
+    text = text.replace(INLINE_RE, (full, key: string, value: string) => {
+      const v = value.trim();
+      if (v) {
+        if (key === "date") date = v;
+        else if (key === "time") time = v;
+      }
+      return "";
+    });
+  }
 
-  // Drop leftover "|" separators and the calendar icon left by removed fields
-  text = text.replace(/(?:\s*\|)+\s*$/g, "").replace(ICON_TAIL_RE, "").trim();
+  // Drop leftover "|" separators, trailing calendar icons and double spaces
+  text = text
+    .replace(/(?:\s*\|)+\s*$/g, "")
+    .replace(ICON_TAIL_RE, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 
+  // Collect tags
   const tags: string[] = [];
   let tm: RegExpExecArray | null;
   TAG_RE.lastIndex = 0;
@@ -75,6 +118,7 @@ export function parseTaskLine(
     tags,
     date,
     time,
+    format: dateFormat,
   };
 }
 

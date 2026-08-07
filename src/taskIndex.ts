@@ -1,6 +1,6 @@
 import { TFile } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
-import { ParsedTask, parseTaskLine } from "./parser";
+import { DateFormat, ParsedTask, parseTaskLine } from "./parser";
 
 /** Task index by date. Caches parsed tasks per file; on a file change only its
     contribution and the date index are rebuilt. */
@@ -9,12 +9,27 @@ export class TaskIndex {
   private fileCache = new Map<string, ParsedTask[]>();
   private mtimes = new Map<string, number>();
   private byDate = new Map<string, ParsedTask[]>();
+  /** Date-format key used for the last parse; on change the whole cache is rebuilt */
+  private lastFormatKey = "";
 
   constructor(plugin: TimeVisualizationPlugin) {
     this.plugin = plugin;
   }
 
+  private formatKey(): string {
+    return `${this.plugin.settings.dateFormat}|${this.plugin.settings.customDateRegex}`;
+  }
+
   async refresh(): Promise<void> {
+    // When the date format changes, cached tasks were parsed differently — drop
+    // the cache so files are re-read with the new parser (mtime is unchanged)
+    const fmtKey = this.formatKey();
+    if (this.lastFormatKey && this.lastFormatKey !== fmtKey) {
+      this.fileCache.clear();
+      this.mtimes.clear();
+    }
+    this.lastFormatKey = fmtKey;
+
     const files = this.plugin.app.vault.getMarkdownFiles();
     const seen = new Set<string>();
     const changed: TFile[] = [];
@@ -44,7 +59,7 @@ export class TaskIndex {
           // Cache ALL tasks; the tag filter is applied when building the date
           // index — otherwise changing includeTags wouldn't update the view
           // without re-reading files (mtime is unchanged)
-          this.fileCache.set(file.path, parseContent(content, file.path));
+          this.fileCache.set(file.path, this.parseContent(content, file.path));
           this.mtimes.set(file.path, file.stat.mtime);
         })
       );
@@ -62,13 +77,25 @@ export class TaskIndex {
     }
     if (file instanceof TFile && file.extension === "md") {
       const content = await this.plugin.app.vault.cachedRead(file);
-      this.fileCache.set(filePath, parseContent(content, filePath));
+      this.fileCache.set(filePath, this.parseContent(content, filePath));
       this.mtimes.set(filePath, file.stat.mtime);
     } else {
       this.fileCache.delete(filePath);
       this.mtimes.delete(filePath);
     }
     this.rebuildDateIndex();
+  }
+
+  private parseContent(content: string, filePath: string): ParsedTask[] {
+    const tasks: ParsedTask[] = [];
+    const lines = content.split("\n");
+    const format = this.plugin.settings.dateFormat;
+    const custom = this.plugin.settings.customDateRegex;
+    for (let i = 0; i < lines.length; i++) {
+      const t = parseTaskLine(lines[i], filePath, i, format, custom);
+      if (t) tasks.push(t);
+    }
+    return tasks;
   }
 
   getFileTasks(filePath: string): ParsedTask[] {
@@ -130,6 +157,8 @@ export class TaskIndex {
     await this.plugin.app.vault.modify(file, lines.join("\n"));
   }
 
+  /** Moves a task to another date, preserving the format it was parsed with.
+      Custom-format tasks are read-only — moving is not supported. */
   async moveTask(task: ParsedTask, newDate: string): Promise<void> {
     const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
     if (!(file instanceof TFile)) return;
@@ -138,16 +167,29 @@ export class TaskIndex {
     const line = lines[task.line];
     if (!line) return;
 
-    const dateRe = /\[date::\s*[^\]]*\]/;
-    if (dateRe.test(line)) {
-      lines[task.line] = line.replace(dateRe, `[date:: ${newDate}]`);
+    if (task.format === "tasks") {
+      const dateRe = /📅\s*\d{4}-\d{2}-\d{2}/;
+      if (dateRe.test(line)) {
+        lines[task.line] = line.replace(dateRe, `📅 ${newDate}`);
+      } else {
+        lines[task.line] = line.trimEnd() + ` 📅 ${newDate}`;
+      }
+    } else if (task.format === "custom") {
+      return; // custom regex — no reliable way to rewrite the date
     } else {
-      lines[task.line] = line.trimEnd() + ` |[date:: ${newDate}]`;
+      const dateRe = /\[date::\s*[^\]]*\]/;
+      if (dateRe.test(line)) {
+        lines[task.line] = line.replace(dateRe, `[date:: ${newDate}]`);
+      } else {
+        lines[task.line] = line.trimEnd() + ` |[date:: ${newDate}]`;
+      }
     }
 
     await this.plugin.app.vault.modify(file, lines.join("\n"));
   }
 
+  /** Rewrites the task text, preserving the quote prefix, checkbox status, tags
+      and date/time in the format the task was parsed with. */
   async updateTaskText(task: ParsedTask, newText: string): Promise<void> {
     const file = this.plugin.app.vault.getAbstractFileByPath(task.filePath);
     if (!(file instanceof TFile)) return;
@@ -165,8 +207,17 @@ export class TaskIndex {
     const tags = task.tags.join(" ");
     const text = newText.trim();
     const tagsPart = text && tags ? " " + tags : tags;
-    const datePart = task.date ? ` |[date:: ${task.date}]` : "";
-    const timePart = task.time ? ` |[time:: ${task.time}]` : "";
+    // Re-append date/time in the format the task was parsed with; custom format
+    // is read-only, so its date/time fields are dropped on edit
+    let datePart = "";
+    let timePart = "";
+    if (task.format === "tasks") {
+      datePart = task.date ? ` 📅 ${task.date}` : "";
+      timePart = task.time ? ` ⏰ ${task.time}` : "";
+    } else if (task.format === "legacy") {
+      datePart = task.date ? ` |[date:: ${task.date}]` : "";
+      timePart = task.time ? ` |[time:: ${task.time}]` : "";
+    }
     // The space between marker and checkbox is required, otherwise the line
     // stops being recognized as a task
     lines[task.line] =
@@ -194,14 +245,4 @@ export class TaskIndex {
     return true;
   }
 
-}
-
-function parseContent(content: string, filePath: string): ParsedTask[] {
-  const tasks: ParsedTask[] = [];
-  const lines = content.split("\n");
-  for (let i = 0; i < lines.length; i++) {
-    const t = parseTaskLine(lines[i], filePath, i);
-    if (t) tasks.push(t);
-  }
-  return tasks;
 }

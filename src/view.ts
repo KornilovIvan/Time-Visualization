@@ -748,17 +748,20 @@ export class TimeVisualizationView extends ItemView {
       }
     }
 
-    // Task menu: only visible in the day card on hover (hidden elsewhere via CSS)
-    const menuBtn = row.createEl("button", {
-      cls: "be-task-menu",
-      attr: { "aria-label": "Task menu" },
-    });
-    setIcon(menuBtn, "more-horizontal");
-    menuBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      e.preventDefault();
-      this.showTaskMenu(menuBtn, row, t);
-    });
+    // Task menu: only visible in the day card on hover (hidden elsewhere via CSS).
+    // Custom-format tasks are read-only, so the menu is omitted.
+    if (t.format !== "custom") {
+      const menuBtn = row.createEl("button", {
+        cls: "be-task-menu",
+        attr: { "aria-label": "Task menu" },
+      });
+      setIcon(menuBtn, "more-horizontal");
+      menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.showTaskMenu(menuBtn, row, t);
+      });
+    }
 
     return row;
   }

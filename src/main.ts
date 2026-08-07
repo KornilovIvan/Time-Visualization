@@ -9,17 +9,24 @@ import {
   WorkspaceLeaf,
 } from "obsidian";
 import { TimeVisualizationView, VIEW_TYPE } from "./view";
+import { DateFormat } from "./parser";
 
 export interface TimeVisualizationSettings {
   /** Sources: folders (path without extension) or full note paths. Empty = whole vault */
   sources: string[];
   /** Tags (no #): only show tasks carrying any of them. Empty = all tags */
   includeTags: string[];
+  /** How task dates are parsed: legacy inline fields, Tasks emoji fields, or a custom regex */
+  dateFormat: DateFormat;
+  /** Custom regex with named groups "date" and "time" (used when dateFormat = "custom") */
+  customDateRegex: string;
 }
 
 export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   sources: [],
   includeTags: [],
+  dateFormat: "legacy",
+  customDateRegex: "",
 };
 
 class MultiSuggest extends AbstractInputSuggest<string> {
@@ -238,34 +245,76 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Sources (folders and notes)")
-      .setDesc("Folders (path without extension) and full note paths. Empty = whole vault.");
-    const sourceHolder = containerEl.createDiv({ cls: "tv-setting-control" });
-    buildMultiSelect(
-      sourceHolder,
-      sources,
-      this.plugin.settings.sources,
-      (next) => {
-        this.plugin.settings.sources = next;
-        void this.plugin.saveSettings();
-      },
-      this.app
-    );
+      .setDesc("Folders (path without extension) and full note paths. Empty = whole vault.")
+      .then((setting) => {
+        // Inline the multi-select into the setting row so the field clearly
+        // belongs to its title/description
+        const holder = setting.infoEl.createDiv({ cls: "tv-setting-control" });
+        buildMultiSelect(
+          holder,
+          sources,
+          this.plugin.settings.sources,
+          (next) => {
+            this.plugin.settings.sources = next;
+            void this.plugin.saveSettings();
+          },
+          this.app
+        );
+      });
 
     new Setting(containerEl)
       .setName("Only parse tags")
-      .setDesc("Show only tasks carrying these tags. Empty = all tags.");
-    const includeTagHolder = containerEl.createDiv({ cls: "tv-setting-control" });
-    buildMultiSelect(
-      includeTagHolder,
-      tags,
-      this.plugin.settings.includeTags,
-      (next) => {
-        this.plugin.settings.includeTags = next;
-        void this.plugin.saveSettings();
-      },
-      this.app,
-      "tag"
-    );
+      .setDesc("Show only tasks carrying these tags. Empty = all tags.")
+      .then((setting) => {
+        const holder = setting.infoEl.createDiv({ cls: "tv-setting-control" });
+        buildMultiSelect(
+          holder,
+          tags,
+          this.plugin.settings.includeTags,
+          (next) => {
+            this.plugin.settings.includeTags = next;
+            void this.plugin.saveSettings();
+          },
+          this.app,
+          "tag"
+        );
+      });
+
+    new Setting(containerEl)
+      .setName("Date format")
+      .setDesc("How task dates are read: legacy inline fields ([date:: ...]), Obsidian Tasks emoji fields (📅 ...), or a custom regex.")
+      .addDropdown((dd) =>
+        dd
+          .addOption("legacy", "Inline fields ([date:: ...])")
+          .addOption("tasks", "Tasks plugin (📅 YYYY-MM-DD)")
+          .addOption("custom", "Custom regex")
+          .setValue(this.plugin.settings.dateFormat)
+          .onChange(async (v) => {
+            this.plugin.settings.dateFormat = v as DateFormat;
+            await this.plugin.saveSettings();
+            await this.plugin.reload();
+          })
+      );
+
+    new Setting(containerEl)
+      .setName("Custom date regex")
+      .setDesc("Used with the 'Custom regex' format. A regex with named groups 'date' and 'time', e.g. 📅 (?<date>\\d{4}-\\d{2}-\\d{2}).")
+      .addText((t) => {
+        t.setValue(this.plugin.settings.customDateRegex);
+        t.inputEl.placeholder = "📅 (?<date>\\d{4}-\\d{2}-\\d{2})";
+        // Save on every keystroke, but re-parse only when editing finishes
+        // (blur/Enter) — a full rescan per keystroke would lag on big vaults
+        t.onChange(async (v) => {
+          this.plugin.settings.customDateRegex = v;
+          await this.plugin.saveSettings();
+        });
+        t.inputEl.addEventListener("blur", () => {
+          void this.plugin.reload();
+        });
+        t.inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        });
+      });
 
     new Setting(containerEl)
       .setName("Apply")
