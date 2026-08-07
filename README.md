@@ -1,7 +1,6 @@
 # Time Visualization
 
-A bird's-eye view over your daily tasks: collect tasks from **many notes** into one place and zoom smoothly between **day → week → month**.
-
+A bird's-eye view over your daily tasks: an **Obsidian plugin** that collects tasks from **many notes** into one calendar and lets you zoom smoothly between **day → week → month** views.
 
 ![Time Visualization demo](assets/demo.gif)
 
@@ -16,6 +15,20 @@ This plugin parses task lines from **all your notes** into a single index, then 
 - **Month** — a calendar grid where each cell is a live day card.
 
 Everything is one continuous view: switch levels with a click, page through time with the arrow keys, and toggle or edit tasks right on the card — changes are written back to the source notes.
+
+## Features
+
+- **Three zoom levels** — day, week and month in one continuous view; switch with a click or page with the arrow keys.
+- **Parses tasks from all notes** — no manual aggregation; tasks are grouped by their source note.
+- **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
+- **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
+- **Filters** — limit parsing to specific folders/notes and tags.
+- **Keyboard friendly** — arrow keys navigate time.
+
+## Compatibility
+
+- Obsidian 1.4.10+ (desktop).
+- Task formats: `|[date:: YYYY-MM-DD]`, Tasks `📅 YYYY-MM-DD`, or a custom regex.
 
 ## Task format
 

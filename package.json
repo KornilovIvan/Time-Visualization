@@ -10,9 +10,16 @@
   },
   "keywords": [
     "obsidian",
-    "planner",
+    "obsidian-plugin",
+    "tasks",
+    "task-manager",
     "calendar",
-    "time"
+    "planner",
+    "day",
+    "week",
+    "month",
+    "productivity",
+    "time-management"
   ],
   "license": "MIT",
   "devDependencies": {
