@@ -1027,3 +1027,22 @@
   border-radius: 4px;
   padding: 1px 5px;
 }
+
+.be-day-list.be-hidden {
+  display: none;
+}
+
+.be-day-slide.be-no-grow,
+.be-week-slide.be-no-grow,
+.be-month-slide.be-no-grow {
+  flex: none;
+}
+
+.be-task-clone {
+  position: absolute;
+  pointer-events: none;
+}
+
+.be-task.is-editing .be-task-text {
+  display: none;
+}

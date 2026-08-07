@@ -538,7 +538,7 @@ export class TimeVisualizationView extends ItemView {
 
     const list = card.createDiv({ cls: "be-day-list" });
     if (active.length === 0) {
-      list.style.setProperty("display", "none");
+      list.classList.add("be-hidden");
     } else {
       list.createDiv({ cls: "be-day-active-title", text: "Open tasks" });
       for (const [path, gt] of this.groupTasksByFile(active)) {
@@ -653,15 +653,13 @@ export class TimeVisualizationView extends ItemView {
     if (!focusSize) return;
     const slideSize = meta.slideRatio * focusSize;
     for (const slide of Array.from(track.children) as HTMLElement[]) {
-      slide.style.setProperty("flex", "none");
+      slide.classList.add("be-no-grow");
       if (meta.axis === "x") slide.style.width = `${slideSize}px`;
       else slide.style.height = `${slideSize}px`;
     }
     const base = -(1.5 * slideSize - 0.5 * focusSize);
-    track.style.setProperty("transition", "none");
     track.style.transform = meta.axis === "x" ? `translateX(${base}px)` : `translateY(${base}px)`;
     void (meta.axis === "x" ? track.offsetWidth : track.offsetHeight); // reflow
-    track.style.removeProperty("transition");
   }
 
   /** Carousel step with a scroll animation. On cancel (fast paging) the track
@@ -692,7 +690,7 @@ export class TimeVisualizationView extends ItemView {
 
     const slideSize = meta.slideRatio * focusSize;
     for (const slide of Array.from(track.children) as HTMLElement[]) {
-      slide.style.setProperty("flex", "none");
+      slide.classList.add("be-no-grow");
       if (meta.axis === "x") slide.style.width = `${slideSize}px`;
       else slide.style.height = `${slideSize}px`;
     }
@@ -706,7 +704,6 @@ export class TimeVisualizationView extends ItemView {
       track.style.transform = `${translate}(${base}px)`;
     }
 
-    track.style.setProperty("transition", "none");
     track.style.transform = `${translate}(${start}px)`;
     void (meta.axis === "x" ? track.offsetWidth : track.offsetHeight); // reflow
 
@@ -830,11 +827,10 @@ export class TimeVisualizationView extends ItemView {
         const sRect = slide.getBoundingClientRect();
         const clone = row.cloneNode(true) as HTMLElement;
         clone.removeAttribute("style");
-        clone.style.setProperty("position", "absolute");
+        clone.classList.add("be-task-clone");
         clone.style.top = `${rect.top - sRect.top + slide.scrollTop}px`;
         clone.style.left = `${rect.left - sRect.left}px`;
         clone.style.width = `${rect.width}px`;
-        clone.style.setProperty("pointer-events", "none");
         slide.appendChild(clone);
         this.flyRight(clone, 500);
         window.setTimeout(() => clone.remove(), 500);
@@ -885,7 +881,6 @@ export class TimeVisualizationView extends ItemView {
     const input = document.createElement("input");
     input.className = "be-task-edit";
     input.value = t.text;
-    textEl.style.setProperty("display", "none");
     row.insertBefore(input, textEl);
     input.focus();
     input.select();
@@ -910,7 +905,6 @@ export class TimeVisualizationView extends ItemView {
       finished = true;
       const v = input.value.trim();
       input.remove();
-      textEl.style.removeProperty("display");
       if (explicit) {
         release();
       } else {
@@ -1016,14 +1010,10 @@ export class TimeVisualizationView extends ItemView {
   }
 
   private fadeIn(el: HTMLElement, duration: number): void {
-    el.style.setProperty("opacity", "0");
-    void el.offsetWidth;
     el.animate(
       [{ opacity: 0 }, { opacity: 1 }],
-      { duration, easing: "ease-out", fill: "forwards" }
-    ).onfinish = () => {
-      el.style.removeProperty("opacity");
-    };
+      { duration, easing: "ease-out", fill: "backwards" }
+    );
   }
 
   private applyTaskToggled(row: HTMLElement, box: HTMLElement | null, t: ParsedTask): void {
@@ -1145,7 +1135,6 @@ export class TimeVisualizationView extends ItemView {
             if (title && dy !== 0) {
               // Constant speed: duration proportional to distance
               const duration = Math.min(1500, Math.max(220, Math.abs(dy) / 0.35));
-              title.style.setProperty("opacity", "0");
               title.style.transform = `translateY(${-dy}px)`;
               void title.offsetWidth; // reflow
               title.animate(
@@ -1153,7 +1142,7 @@ export class TimeVisualizationView extends ItemView {
                   { transform: `translateY(${-dy}px)`, opacity: 0 },
                   { transform: "translateY(0)", opacity: 1 },
                 ],
-                { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" }
+                { duration, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "both" }
               ).onfinish = () => {
                 title.style.removeProperty("opacity");
                 title.style.removeProperty("transform");
@@ -1199,7 +1188,7 @@ export class TimeVisualizationView extends ItemView {
     const hasGroups = list.querySelector(".be-day-group") !== null;
     const title = list.querySelector(".be-day-active-title") as HTMLElement | null;
     if (hasGroups) {
-      list.style.removeProperty("display");
+      list.classList.remove("be-hidden");
       if (doneSection) doneSection.style.removeProperty("margin-top");
       if (doneSection && !doneSection.querySelector(".be-day-done-bar")) {
         const bar = doneSection.createDiv({ cls: "be-day-done-bar" });
@@ -1212,7 +1201,7 @@ export class TimeVisualizationView extends ItemView {
     } else {
       // Hide the list so Done moves up; keep the default top margin so Done
       // doesn't "fly" above its spot
-      list.style.setProperty("display", "none");
+      list.classList.add("be-hidden");
       if (doneSection) doneSection.style.removeProperty("margin-top");
       if (title) title.remove();
     }
