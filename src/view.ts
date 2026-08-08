@@ -58,6 +58,10 @@ export class TimeVisualizationView extends ItemView {
   private taskRefs = new Map<string, ParsedTask>();
   private editingTaskKey: string | null = null;
   private taskMenu: HTMLElement | null = null;
+  /** Button that opened the current menu (to toggle it closed on re-click) */
+  private taskMenuAnchor: HTMLElement | null = null;
+  /** A click that just closed the task menu must not toggle a task */
+  private menuJustClosed = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: TimeVisualizationPlugin) {
     super(leaf);
@@ -244,6 +248,12 @@ export class TimeVisualizationView extends ItemView {
   /** Task click handler at document level (the most reliable way) */
   onDocumentClick(e: MouseEvent): void {
     if (this.editingTaskKey) return;
+    // The click that just closed the task menu should only close it — it must
+    // not toggle a task underneath
+    if (this.menuJustClosed) {
+      this.menuJustClosed = false;
+      return;
+    }
     const taskEl = (e.target as HTMLElement).closest(".be-task") as HTMLElement | null;
     if (!taskEl) return;
     if (taskEl.classList.contains("is-editing")) return;
@@ -768,7 +778,16 @@ export class TimeVisualizationView extends ItemView {
 
   /** Custom task menu popup (plugin-styled, no system Menu) */
   private showTaskMenu(anchor: HTMLElement, row: HTMLElement, t: ParsedTask): void {
+    // Re-click on the same button toggles the menu closed
+    if (this.taskMenu && this.taskMenuAnchor === anchor) {
+      this.closeTaskMenu();
+      return;
+    }
     this.closeTaskMenu();
+    // Opening a fresh menu — clear the "just closed" guard so the next click
+    // on a task is not swallowed
+    this.menuJustClosed = false;
+    this.taskMenuAnchor = anchor;
 
     const popup = createDiv();
     popup.className = "be-task-menu-popup";
@@ -798,13 +817,27 @@ export class TimeVisualizationView extends ItemView {
     popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
     popup.style.top = `${rect.bottom + 4}px`;
 
-    // Close on a click outside the popup
+    // Close on a click outside the popup; the following click event must not
+    // toggle a task (the user just wanted to dismiss the menu). Clicks on the
+    // anchor button are ignored here — its click handler toggles the menu.
     const close = (ev: MouseEvent): void => {
       if (popup.contains(ev.target as Node)) return;
+      if (anchor.contains(ev.target as Node)) return;
+      this.menuJustClosed = true;
       this.closeTaskMenu();
       document.removeEventListener("mousedown", close, true);
+      document.removeEventListener("wheel", onScroll, true);
     };
     document.addEventListener("mousedown", close, true);
+
+    // Close when the user starts scrolling the task list — the menu must not
+    // stay floating over the content
+    const onScroll = (): void => {
+      this.closeTaskMenu();
+      document.removeEventListener("mousedown", close, true);
+      document.removeEventListener("wheel", onScroll, true);
+    };
+    document.addEventListener("wheel", onScroll, true);
   }
 
   /** Moves a task to the next day: the row flies right while staying in the
@@ -860,6 +893,7 @@ export class TimeVisualizationView extends ItemView {
       this.taskMenu.remove();
       this.taskMenu = null;
     }
+    this.taskMenuAnchor = null;
   }
 
   /** Inline editing of the task text (day card only).
