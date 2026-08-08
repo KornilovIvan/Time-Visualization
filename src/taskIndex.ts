@@ -1,6 +1,6 @@
 import { TFile } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
-import { DateFormat, ParsedTask, parseTaskLine } from "./parser";
+import { ParsedTask, parseTaskLine } from "./parser";
 
 /** Task index by date. Caches parsed tasks per file; on a file change only its
     contribution and the date index are rebuilt. */

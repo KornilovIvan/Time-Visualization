@@ -160,7 +160,11 @@ export default class TimeVisualizationPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign(
+      {},
+      DEFAULT_SETTINGS,
+      await this.loadData() as Partial<TimeVisualizationSettings>
+    );
   }
 
   async saveSettings(): Promise<void> {

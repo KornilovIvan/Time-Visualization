@@ -387,7 +387,7 @@ export class TimeVisualizationView extends ItemView {
   }
 
   private buildSlide(d: Date, meta: CarouselMeta): HTMLElement {
-    const slide = document.createElement("div");
+    const slide = createDiv();
     slide.className = meta.slideCls;
     meta.fill(slide, meta.keyOf(d));
     return slide;
@@ -402,10 +402,10 @@ export class TimeVisualizationView extends ItemView {
     this.track = track;
 
     const cur = this.cursor;
-    const slidePrev = document.createElement("div");
+    const slidePrev = createDiv();
     slidePrev.className = meta.slideCls;
     const slideCur = this.buildSlide(cur, meta);
-    const slideNext = document.createElement("div");
+    const slideNext = createDiv();
     slideNext.className = meta.slideCls;
     track.appendChild(slidePrev);
     track.appendChild(slideCur);
@@ -442,7 +442,7 @@ export class TimeVisualizationView extends ItemView {
       const key = formatDate(day);
       const isToday = key === todayKey;
 
-      const card = frag.appendChild(document.createElement("div"));
+      const card = frag.appendChild(createDiv());
       // Only the real today gets the outline — the same weekday exists in every week
       card.className = "be-day-card" + (isToday ? " is-today" : "");
       const head = card.createDiv({ cls: "be-day-head" });
@@ -488,7 +488,7 @@ export class TimeVisualizationView extends ItemView {
       const isToday = key === todayKey;
 
       // Cell is a full day card, so FLIP/grouping/sections work like in day and week
-      const cell = frag.appendChild(document.createElement("div"));
+      const cell = frag.appendChild(createDiv());
       cell.className =
         "be-month-cell be-day-card" +
         (inMonth ? "" : " is-out") +
@@ -721,7 +721,7 @@ export class TimeVisualizationView extends ItemView {
   }
 
   private buildTaskRow(t: ParsedTask, compact: boolean): HTMLElement {
-    const row = document.createElement("div");
+    const row = createDiv();
     row.className = "be-task" + (t.checked ? " is-done" : "");
 
     const box = row.createEl("button", {
@@ -770,7 +770,7 @@ export class TimeVisualizationView extends ItemView {
   private showTaskMenu(anchor: HTMLElement, row: HTMLElement, t: ParsedTask): void {
     this.closeTaskMenu();
 
-    const popup = document.createElement("div");
+    const popup = createDiv();
     popup.className = "be-task-menu-popup";
     const item = popup.createDiv({ cls: "be-task-menu-item" });
     setIcon(item, "pencil");
@@ -807,9 +807,11 @@ export class TimeVisualizationView extends ItemView {
     document.addEventListener("mousedown", close, true);
   }
 
-  /** Moves a task to the next day: fly right + smooth lift of the rest.
-      Halfway, a clone keeps flying while the row is removed via flipMove +
-      syncActiveSection. File re-render is suppressed until the end. */
+  /** Moves a task to the next day: the row flies right while staying in the
+      layout (no reflow mid-flight, so it never stutters). Near the end, when it
+      is already transparent, it is removed and the rest lift smoothly via FLIP
+      — the flight and the lift never share a frame, and FLIP removes the row's
+      space completely (no leftover padding/gap jumps). */
   private moveTaskToNextDay(row: HTMLElement, t: ParsedTask): void {
     if (!t.date) return;
     const next = addDays(parseDate(t.date), 1);
@@ -818,27 +820,22 @@ export class TimeVisualizationView extends ItemView {
     const group = row.closest(".be-day-group") as HTMLElement | null;
     const groupTasks = group?.querySelector(".be-day-group-tasks");
     const isLast = !!groupTasks && groupTasks.childElementCount === 1;
+    const slide = row.closest(".be-day-slide") as HTMLElement | null;
 
-    const anim = this.flyRight(row, 900);
+    // Flight first: the row keeps its place in the layout, so no synchronous
+    // reflow happens while it flies (a mid-flight layout change was what caused
+    // the visible stutter)
+    row.animate(
+      [
+        { transform: "translateX(0)", opacity: 1 },
+        { transform: "translateX(120%)", opacity: 0 },
+      ],
+      { duration: 1800, easing: "cubic-bezier(0.22, 1, 0.36, 1)", fill: "forwards" }
+    );
 
-    const flyAndLift = (): void => {
-      const slide = row.closest(".be-day-slide") as HTMLElement | null;
-
-      // The clone keeps flying right inside the card (position absolute)
-      if (slide) {
-        const rect = row.getBoundingClientRect();
-        const sRect = slide.getBoundingClientRect();
-        const clone = row.cloneNode(true) as HTMLElement;
-        clone.removeAttribute("style");
-        clone.classList.add("be-task-clone");
-        clone.style.top = `${rect.top - sRect.top + slide.scrollTop}px`;
-        clone.style.left = `${rect.left - sRect.left}px`;
-        clone.style.width = `${rect.width}px`;
-        slide.appendChild(clone);
-        this.flyRight(clone, 500);
-        window.setTimeout(() => clone.remove(), 500);
-      }
-
+    // Near the end of the flight the row is already transparent — remove it and
+    // lift the rest with FLIP in a separate moment (no animation conflict)
+    const lift = (): void => {
       if (slide) {
         this.flipMove(slide, () => {
           row.remove();
@@ -848,19 +845,14 @@ export class TimeVisualizationView extends ItemView {
       } else {
         row.remove();
       }
-
       void this.index.moveTask(t, nextKey).catch(() => {
         /* on error the index/render will show the actual state */
       });
     };
-    window.setTimeout(flyAndLift, 450);
+    window.setTimeout(lift, 750);
 
     // Suppress re-render from the file change — otherwise it would cut the animation
-    this.suppressRerender(1500);
-
-    anim.onfinish = () => {
-      row.remove();
-    };
+    this.suppressRerender(2500);
   }
 
   private closeTaskMenu(): void {
@@ -881,7 +873,7 @@ export class TimeVisualizationView extends ItemView {
     const taskKey = `${t.filePath}:${t.line}`;
     this.editingTaskKey = taskKey;
 
-    const input = document.createElement("input");
+    const input = createEl("input");
     input.className = "be-task-edit";
     input.value = t.text;
     row.insertBefore(input, textEl);
@@ -1000,16 +992,6 @@ export class TimeVisualizationView extends ItemView {
     svg.appendChild(path);
     box.empty();
     box.appendChild(svg);
-  }
-
-  private flyRight(el: HTMLElement, duration: number): Animation {
-    return el.animate(
-      [
-        { transform: "translateX(0)", opacity: 1 },
-        { transform: "translateX(120%)", opacity: 0 },
-      ],
-      { duration, easing: "ease-in-out", fill: "forwards" }
-    );
   }
 
   private fadeIn(el: HTMLElement, duration: number): void {
@@ -1192,7 +1174,7 @@ export class TimeVisualizationView extends ItemView {
     const title = list.querySelector(".be-day-active-title") as HTMLElement | null;
     if (hasGroups) {
       list.classList.remove("be-hidden");
-      if (doneSection) doneSection.style.removeProperty("margin-top");
+      if (doneSection) doneSection.classList.remove("be-done-top");
       if (doneSection && !doneSection.querySelector(".be-day-done-bar")) {
         const bar = doneSection.createDiv({ cls: "be-day-done-bar" });
         doneSection.insertBefore(bar, doneSection.firstChild);
@@ -1202,10 +1184,11 @@ export class TimeVisualizationView extends ItemView {
         list.insertBefore(t, list.firstChild);
       }
     } else {
-      // Hide the list so Done moves up; keep the default top margin so Done
-      // doesn't "fly" above its spot
+      // Hide the list so Done moves up flush against the header: the bar above
+      // Done then lands exactly on the header's line and fades out (no double
+      // line, no leftover gap)
       list.classList.add("be-hidden");
-      if (doneSection) doneSection.style.removeProperty("margin-top");
+      if (doneSection) doneSection.classList.add("be-done-top");
       if (title) title.remove();
     }
   }
@@ -1214,7 +1197,9 @@ export class TimeVisualizationView extends ItemView {
   private flipMove(slide: HTMLElement, mutate: () => void): void {
     const els = Array.from(
       slide.querySelectorAll<HTMLElement>(
-        ".be-task, .be-day-group-title, .be-day-active-title, .be-day-done-title, .be-day-done-bar"
+        // Exclude the flying clone — it has its own animation and must not be
+        // pulled by the layout shift
+        ".be-task:not(.be-task-clone), .be-day-group-title, .be-day-active-title, .be-day-done-title, .be-day-done-bar"
       )
     );
     const before = new Map<HTMLElement, number>();
@@ -1230,7 +1215,7 @@ export class TimeVisualizationView extends ItemView {
     // The active-task list is hidden — Done takes its place: the divider bar
     // travels with Done and fades out at the end of the FLIP
     const list = slide.querySelector(".be-day-list") as HTMLElement | null;
-    const listHidden = !!list && list.style.display === "none";
+    const listHidden = !!list && list.classList.contains("be-hidden");
 
     for (const el of els) {
       if (!el.isConnected) continue;
@@ -1244,9 +1229,12 @@ export class TimeVisualizationView extends ItemView {
       const duration = Math.min(1500, Math.max(220, Math.abs(dy) / 0.35));
       const anim = el.animate(
         listHidden && isBar
-          ? [
-              { transform: `translateY(${dy}px)`, opacity: 1 },
-              { transform: "translateY(0px)", opacity: 0 },
+          ? // The bar fades out before it reaches the header's line, so the two
+            // lines never overlap into a thick one
+            [
+              { transform: `translateY(${dy}px)`, opacity: 1, offset: 0 },
+              { transform: `translateY(${dy * 0.15}px)`, opacity: 0, offset: 0.85 },
+              { transform: "translateY(0px)", opacity: 0, offset: 1 },
             ]
           : [
               { transform: `translateY(${dy}px)` },

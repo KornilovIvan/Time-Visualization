@@ -217,7 +217,6 @@
   background: transparent;
   border-right: 1px solid var(--background-modifier-border);
   overflow-y: auto;
-  scrollbar-width: none;
 }
 .be-week .be-day-card::-webkit-scrollbar {
   display: none;
@@ -459,7 +458,6 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  scrollbar-width: none;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 160ms ease, opacity 160ms ease;
 }
@@ -693,7 +691,6 @@
   background: var(--background-primary);
   overflow-x: hidden;
   overflow-y: auto;
-  scrollbar-width: none;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
   transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
 }
@@ -864,19 +861,30 @@
   display: none;
   align-items: center;
   justify-content: center;
+  /* Comfortable tap/hover target */
+  min-width: 28px;
+  min-height: 28px;
+  padding: 6px;
+  border-radius: 6px;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
   color: var(--text-muted);
   cursor: pointer;
-  padding: 2px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.be-task-menu svg {
+  width: 1.35em;
+  height: 1.35em;
 }
 
 .be-task-menu:hover,
 .be-task-menu:focus,
 .be-task-menu:active {
-  background: transparent !important;
+  /* Fill the hit area on hover */
+  background: var(--background-modifier-hover) !important;
   border: none !important;
   box-shadow: none !important;
   outline: none !important;
@@ -1046,4 +1054,10 @@
 
 .be-task.is-editing .be-task-text {
   display: none;
+}
+
+/* When the active-task list is hidden, Done sits flush against the header so
+   the bar above Done lands exactly on the header's line before fading out */
+.be-day-done-section.be-done-top {
+  margin-top: 0;
 }
