@@ -164,16 +164,25 @@ export class TaskIndex {
       ? line.replace(re, (mm, pre) => `${pre} [ ]`)
       : line.replace(re, (mm, pre) => `${pre} [x]`);
 
-    if (checked) {
-      // Returning the task to open — strip the completion marker
-      lines[task.line] = lines[task.line]
-        .replace(/\[done::\s*[^\]]*\]/g, "")
-        .replace(/(?:\s*\|)+\s*$/g, "")
-        .trimEnd();
-    } else {
-      // Marking done — stamp the completion time so the order of completion
-      // survives a reload
-      lines[task.line] = lines[task.line].trimEnd() + ` |[done:: ${new Date().toISOString()}]`;
+    // Only touch the [done::] marker if the setting is on; otherwise the line
+    // is modified solely for the checkbox
+    if (this.plugin.settings.recordDoneTime) {
+      if (checked) {
+        // Returning the task to open — strip the completion marker (covers a
+        // marker left behind when the user unchecked the task manually)
+        lines[task.line] = lines[task.line]
+          .replace(/\[done::\s*[^\]]*\]/g, "")
+          .replace(/(?:\s*\|)+\s*$/g, "")
+          .trimEnd();
+      } else {
+        // Marking done — replace any leftover marker, then stamp the completion
+        // time so the order of completion survives a reload (no duplicates)
+        lines[task.line] =
+          lines[task.line]
+            .replace(/\[done::\s*[^\]]*\]/g, "")
+            .replace(/(?:\s*\|)+\s*$/g, "")
+            .trimEnd() + ` |[done:: ${new Date().toISOString()}]`;
+      }
     }
 
     await this.plugin.app.vault.modify(file, lines.join("\n"));

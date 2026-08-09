@@ -20,6 +20,8 @@ export interface TimeVisualizationSettings {
   dateFormat: DateFormat;
   /** Custom regex with named groups "date" and "time" (used when dateFormat = "custom") */
   customDateRegex: string;
+  /** Write a [done:: ...] marker on completion so the done order survives reloads */
+  recordDoneTime: boolean;
 }
 
 export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
@@ -27,6 +29,7 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   includeTags: [],
   dateFormat: "legacy",
   customDateRegex: "",
+  recordDoneTime: true,
 };
 
 class MultiSuggest extends AbstractInputSuggest<string> {
@@ -319,6 +322,16 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
           if (e.key === "Enter") (e.target as HTMLInputElement).blur();
         });
       });
+
+    new Setting(containerEl)
+      .setName("Record completion time")
+      .setDesc("Write a [done:: ...] marker into tasks when you complete them, so the order of completion is kept across reloads. Turn off if you don't want the plugin to modify your task lines.")
+      .addToggle((tg) =>
+        tg.setValue(this.plugin.settings.recordDoneTime).onChange(async (v) => {
+          this.plugin.settings.recordDoneTime = v;
+          await this.plugin.saveSettings();
+        })
+      );
 
     new Setting(containerEl)
       .setName("Apply")
