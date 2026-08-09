@@ -18,6 +18,8 @@ export interface ParsedTask {
   tags: string[];
   date?: string;
   time?: string;
+  /** Completion timestamp (ISO) written on toggle — keeps the order of done tasks */
+  done?: string;
   /** Format used to extract date/time (needed to write back in the same format) */
   format: DateFormat;
 }
@@ -27,6 +29,9 @@ const TASK_RE = /^\s*(?:>\s*)*[-*]\s+\[( |x|X)\]\s+(.*)$/;
 
 // Legacy inline fields [date:: ...] / [time:: ...]
 const INLINE_RE = /\[(date|time)::\s*([^\]]*)\]/g;
+
+// Completion marker [done:: <ISO>] — written on toggle, read in any format
+const DONE_RE = /\[done::\s*([^\]]*)\]/;
 
 // Tasks plugin fields: 📅 due date, ⏰ time
 const TASKS_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/;
@@ -55,6 +60,7 @@ export function parseTaskLine(
   let text = m[2];
   let date: string | undefined;
   let time: string | undefined;
+  let done: string | undefined;
 
   if (dateFormat === "tasks") {
     text = text.replace(TASKS_DATE_RE, (full, d: string) => {
@@ -91,6 +97,13 @@ export function parseTaskLine(
     });
   }
 
+  // Completion marker is format-independent — read it for all formats
+  text = text.replace(DONE_RE, (full, d: string) => {
+    const v = d.trim();
+    if (v) done = v;
+    return "";
+  });
+
   // Drop leftover "|" separators, trailing calendar icons and double spaces
   text = text
     .replace(/(?:\s*\|)+\s*$/g, "")
@@ -118,6 +131,7 @@ export function parseTaskLine(
     tags,
     date,
     time,
+    done,
     format: dateFormat,
   };
 }

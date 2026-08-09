@@ -123,9 +123,19 @@ export class TaskIndex {
     for (const list of byDate.values()) {
       list.sort((a, b) => {
         if (a.checked !== b.checked) return a.checked ? 1 : -1;
-        if (a.time && b.time) return a.time.localeCompare(b.time);
-        if (a.time) return -1;
-        if (b.time) return 1;
+        if (!a.checked) {
+          // Open tasks: by time, then by file/line
+          if (a.time && b.time) return a.time.localeCompare(b.time);
+          if (a.time) return -1;
+          if (b.time) return 1;
+          return a.filePath.localeCompare(b.filePath) || a.line - b.line;
+        }
+        // Done tasks: by completion order (oldest first), then by file/line.
+        // This keeps the order in which tasks were completed across reloads.
+        // Missing or invalid marker sorts last.
+        const da = a.done ? Date.parse(a.done) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+        const db = b.done ? Date.parse(b.done) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+        if (da !== db) return da - db;
         return a.filePath.localeCompare(b.filePath) || a.line - b.line;
       });
     }
@@ -153,6 +163,18 @@ export class TaskIndex {
     lines[task.line] = checked
       ? line.replace(re, (mm, pre) => `${pre} [ ]`)
       : line.replace(re, (mm, pre) => `${pre} [x]`);
+
+    if (checked) {
+      // Returning the task to open — strip the completion marker
+      lines[task.line] = lines[task.line]
+        .replace(/\[done::\s*[^\]]*\]/g, "")
+        .replace(/(?:\s*\|)+\s*$/g, "")
+        .trimEnd();
+    } else {
+      // Marking done — stamp the completion time so the order of completion
+      // survives a reload
+      lines[task.line] = lines[task.line].trimEnd() + ` |[done:: ${new Date().toISOString()}]`;
+    }
 
     await this.plugin.app.vault.modify(file, lines.join("\n"));
   }
@@ -218,10 +240,12 @@ export class TaskIndex {
       datePart = task.date ? ` |[date:: ${task.date}]` : "";
       timePart = task.time ? ` |[time:: ${task.time}]` : "";
     }
+    // Keep the completion marker so the done order survives an edit
+    const donePart = task.done ? ` |[done:: ${task.done}]` : "";
     // The space between marker and checkbox is required, otherwise the line
     // stops being recognized as a task
     lines[task.line] =
-      `${leading} [${checked ? "x" : " "}] ${text}${tagsPart}${datePart}${timePart}`;
+      `${leading} [${checked ? "x" : " "}] ${text}${tagsPart}${datePart}${timePart}${donePart}`;
 
     await this.plugin.app.vault.modify(file, lines.join("\n"));
   }
