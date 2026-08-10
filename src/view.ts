@@ -1065,36 +1065,21 @@ export class TimeVisualizationView extends ItemView {
               }
             }
             const dTasksEl = doneGroup.querySelector(".be-day-group-tasks") as HTMLElement | null;
-            dTasksEl?.appendChild(row);
-            this.ensureDoneVisible(slide);
-            // Last task of the group: the active header flies down and merges
-            // with its "twin" in Done
             if (activeGroup && isLastInGroup) {
-              const title = activeGroup.querySelector(".be-day-group-title") as HTMLElement | null;
-              const doneTitle = doneGroup?.querySelector(".be-day-group-title") as HTMLElement | null;
-              const start = title ? title.getBoundingClientRect().top : activeGroup.getBoundingClientRect().top;
-              const target = doneTitle ? doneTitle.getBoundingClientRect().top : start + 100;
-              const dy = target - start;
-              const animEl = title || activeGroup;
-              animEl.animate(
-                [
-                  { transform: "translateY(0) scale(1)", opacity: 1 },
-                  { transform: `translateY(${dy}px) scale(1)`, opacity: 1, offset: 0.85 },
-                  { transform: `translateY(${dy}px) scale(1)`, opacity: 0 },
-                ],
-                { duration: 520, easing: "cubic-bezier(0.3, 0, 0.9, 0.4)", fill: "forwards" }
-              ).onfinish = () => {
-                // Reset the merge animation's final state, otherwise a repeated
-                // FLIP would capture wrong positions
-                animEl.style.removeProperty("transform");
-                animEl.style.removeProperty("opacity");
-                // Remove the group asynchronously and run FLIP again to lift Done
-                this.flipMove(slide, () => {
-                  activeGroup.remove();
-                  this.syncActiveSection(slide);
-                });
-              };
+              // Last task of the group: merging the header separately and then
+              // lifting the list in a second FLIP caused a visible double step
+              // (the group rose part-way, paused, then jumped). Move the whole
+              // group into Done and remove the empty active group inside this
+              // single FLIP, so the list lifts once, smoothly.
+              const aTasksEl = activeGroup.querySelector(".be-day-group-tasks") as HTMLElement | null;
+              if (aTasksEl) {
+                for (const child of Array.from(aTasksEl.children)) dTasksEl?.appendChild(child);
+              }
+              activeGroup.remove();
+            } else {
+              dTasksEl?.appendChild(row);
             }
+            this.ensureDoneVisible(slide);
           }
         } else {
           row.parentElement?.appendChild(row);
