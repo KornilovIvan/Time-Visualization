@@ -22,6 +22,8 @@ export interface TimeVisualizationSettings {
   customDateRegex: string;
   /** Write a [done:: ...] marker on completion so the done order survives reloads */
   recordDoneTime: boolean;
+  /** Open the view automatically every time Obsidian starts */
+  openOnStartup: boolean;
 }
 
 export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
@@ -29,7 +31,11 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   includeTags: [],
   dateFormat: "legacy",
   customDateRegex: "",
-  recordDoneTime: true,
+  // Off by default: the plugin must not write into task lines until the user
+  // explicitly enables it in Settings
+  recordDoneTime: false,
+  // Off by default: auto-opening the view on every start can be intrusive
+  openOnStartup: false,
 };
 
 class MultiSuggest extends AbstractInputSuggest<string> {
@@ -130,6 +136,14 @@ export default class TimeVisualizationPlugin extends Plugin {
 
   async onload(): Promise<void> {
     await this.loadSettings();
+
+    // Open the view automatically on every start if the setting is enabled.
+    // onLayoutReady fires after the workspace layout is fully loaded, so a new
+    // leaf can be created safely; activateView reuses an existing leaf, so a
+    // restored panel is never duplicated.
+    this.app.workspace.onLayoutReady(() => {
+      if (this.settings.openOnStartup) void this.activateView();
+    });
 
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new TimeVisualizationView(leaf, this));
 
@@ -329,6 +343,16 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
       .addToggle((tg) =>
         tg.setValue(this.plugin.settings.recordDoneTime).onChange(async (v) => {
           this.plugin.settings.recordDoneTime = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Open view on startup")
+      .setDesc("Open the time visualization view automatically every time Obsidian starts.")
+      .addToggle((tg) =>
+        tg.setValue(this.plugin.settings.openOnStartup).onChange(async (v) => {
+          this.plugin.settings.openOnStartup = v;
           await this.plugin.saveSettings();
         })
       );

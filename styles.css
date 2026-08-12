@@ -343,6 +343,7 @@
   letter-spacing: 0.03em;
 }
 .be-week .be-day-num {
+  position: relative;
   font-size: 1.6em;
   font-weight: 900;
 }
@@ -373,14 +374,17 @@
   opacity: 0.85;
 }
 .be-week .be-day-card.is-today .be-day-num::after {
+  /* Absolutely positioned so the dot never wraps onto its own line when the
+     column gets narrow — the today header must stay the same height as the rest */
   content: "";
-  display: inline-block;
-  vertical-align: middle;
+  position: absolute;
+  top: 50%;
+  right: -14px;
   width: 9px;
   height: 9px;
-  margin-left: 12px;
   border-radius: 50%;
   background: var(--text-normal);
+  transform: translateY(-50%);
 }
 .be-week .be-day-card.is-today:first-child .be-day-head {
   border-radius: 14px 0 0 0;
