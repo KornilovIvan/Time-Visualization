@@ -1,5 +1,7 @@
 # Time Visualization
 
+![Obsidian Downloads](https://img.shields.io/badge/dynamic/json?logo=obsidian&color=%23483699&label=downloads&query=%24%5B%22time-visualization%22%5D.downloads&url=https%3A%2F%2Fraw.githubusercontent.com%2Fobsidianmd%2Fobsidian-releases%2Fmaster%2Fcommunity-plugin-stats.json)
+
 A bird's-eye view over your daily tasks: an **Obsidian plugin** that collects tasks from **many notes** into one calendar and lets you zoom smoothly between **day → week → month** views.
 
 ![Time Visualization demo](assets/demo.gif)
@@ -22,7 +24,9 @@ Everything is one continuous view: switch levels with a click, page through time
 - **Parses tasks from all notes** — no manual aggregation; tasks are grouped by their source note.
 - **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
 - **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
+- **Completion order** — completed tasks keep the order they were done in across reloads (writes a `[done:: …]` marker when enabled).
 - **Filters** — limit parsing to specific folders/notes and tags.
+- **Open on startup** — optionally open the view automatically every time Obsidian starts.
 - **Keyboard friendly** — arrow keys navigate time.
 
 ## Compatibility
@@ -64,10 +68,13 @@ Open the view via the ribbon icon (calendar) or the command palette: **"Open Tim
 
 ## Settings
 
-In the plugin settings tab you can limit which notes are scanned:
+In the plugin settings tab:
 
 - **Sources (folders and notes)** — folders or specific note paths to parse. Empty = the whole vault.
 - **Only parse tags** — show only tasks carrying any of the selected tags. Empty = all tags.
+- **Date format** — inline fields (`[date:: …]`), Obsidian Tasks (`📅`), or a custom regex.
+- **Record completion time** — write a `[done:: …]` marker when you complete a task, keeping the done order across reloads. Off by default.
+- **Open view on startup** — open the view automatically every time Obsidian starts. Off by default.
 - **Rescan** — rebuild the index with the new filters.
 
 ## Install
