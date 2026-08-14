@@ -2,6 +2,7 @@ import {
   ItemView,
   WorkspaceLeaf,
   TFile,
+  sanitizeHTMLToDom,
   setIcon,
 } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
@@ -798,7 +799,7 @@ export class TimeVisualizationView extends ItemView {
 
     const text = row.createDiv({ cls: "be-task-text" });
     const textInner = text.createSpan({ cls: "be-task-inner" });
-    textInner.innerHTML = renderInlineMarkdown(t.text);
+    textInner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text)));
 
     if (t.time) {
       text.createSpan({ cls: "be-task-time", text: " " + t.time });
@@ -995,9 +996,9 @@ export class TimeVisualizationView extends ItemView {
         window.setTimeout(release, 0);
       }
       if (save && v && v !== t.text) {
-        if (inner) inner.innerHTML = renderInlineMarkdown(v);
+        if (inner) inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(v)));
         void this.index.updateTaskText(t, v).catch(() => {
-          if (inner) inner.innerHTML = renderInlineMarkdown(t.text); // rollback on error
+          if (inner) inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text))); // rollback on error
         });
       }
     };
