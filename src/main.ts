@@ -166,6 +166,11 @@ export default class TimeVisualizationPlugin extends Plugin {
       if (view) view.handleKey(evt);
     });
 
+    this.registerDomEvent(document, "mousedown", (evt: MouseEvent) => {
+      const view = this.getView();
+      if (view) view.onMouseDown(evt);
+    });
+
     this.registerDomEvent(document, "click", (evt: MouseEvent) => {
       const view = this.getView();
       if (view) view.onDocumentClick(evt);

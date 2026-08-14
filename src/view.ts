@@ -62,6 +62,11 @@ export class TimeVisualizationView extends ItemView {
   private taskMenuAnchor: HTMLElement | null = null;
   /** A click that just closed the task menu must not toggle a task */
   private menuJustClosed = false;
+  /** Pointer position at the last mousedown — to tell a click from a drag-select */
+  private mouseDownX = 0;
+  private mouseDownY = 0;
+  /** Text was selected when the current click started — that click must only clear it */
+  private hadSelection = false;
 
   constructor(leaf: WorkspaceLeaf, plugin: TimeVisualizationPlugin) {
     super(leaf);
@@ -245,6 +250,31 @@ export class TimeVisualizationView extends ItemView {
     this.render();
   }
 
+  /** Records the pointer position and clears any text selection on click, so a
+      click always dismisses the selection instead of toggling a task. */
+  onMouseDown(e: MouseEvent): void {
+    this.mouseDownX = e.clientX;
+    this.mouseDownY = e.clientY;
+    // Only inside our view: remember whether text was selected, then clear it —
+    // the click that clears the selection must not also toggle a task
+    if ((e.target as HTMLElement).closest(".be-root")) {
+      const sel = window.getSelection();
+      this.hadSelection = !!sel && !sel.isCollapsed;
+      if (sel) sel.removeAllRanges();
+    } else {
+      this.hadSelection = false;
+    }
+  }
+
+  /** True when this click followed a drag or just cleared a text selection —
+      such a click must not navigate, open a note or expand a group */
+  private isSelectionClick(e: MouseEvent): boolean {
+    const dx = e.clientX - this.mouseDownX;
+    const dy = e.clientY - this.mouseDownY;
+    if (dx * dx + dy * dy > 25) return true;
+    return this.hadSelection;
+  }
+
   /** Task click handler at document level (the most reliable way) */
   onDocumentClick(e: MouseEvent): void {
     if (this.editingTaskKey) return;
@@ -252,6 +282,17 @@ export class TimeVisualizationView extends ItemView {
     // not toggle a task underneath
     if (this.menuJustClosed) {
       this.menuJustClosed = false;
+      return;
+    }
+    // A click that followed a drag-select (the mouse moved) must not toggle a
+    // task or cancel the text selection — only a real click acts on the task
+    const dx = e.clientX - this.mouseDownX;
+    const dy = e.clientY - this.mouseDownY;
+    if (dx * dx + dy * dy > 25) return;
+    // The click that just cleared a text selection (set in onMouseDown) must
+    // only dismiss the selection — it must not toggle a task either
+    if (this.hadSelection) {
+      this.hadSelection = false;
       return;
     }
     const taskEl = (e.target as HTMLElement).closest(".be-task") as HTMLElement | null;
@@ -475,6 +516,7 @@ export class TimeVisualizationView extends ItemView {
       this.fillDayBody(card, day, true);
       card.addEventListener("click", (ev) => {
         if ((ev.target as HTMLElement).closest(".be-task")) return;
+        if (this.isSelectionClick(ev)) return;
         this.cursor = day;
         this.setLevel("day");
       });
@@ -524,6 +566,7 @@ export class TimeVisualizationView extends ItemView {
 
       cell.addEventListener("click", (ev) => {
         if ((ev.target as HTMLElement).closest(".be-task")) return;
+        if (this.isSelectionClick(ev)) return;
         this.cursor = day;
         this.setLevel("day");
       });
@@ -642,6 +685,7 @@ export class TimeVisualizationView extends ItemView {
     group.addEventListener("click", (ev) => {
       if ((ev.target as HTMLElement).closest(".be-task")) return;
       ev.stopPropagation();
+      if (this.isSelectionClick(ev)) return;
       const collapsed = group.classList.toggle("is-collapsed");
       gl.empty();
       if (!collapsed) {
@@ -991,6 +1035,7 @@ export class TimeVisualizationView extends ItemView {
   private attachNoteLink(name: HTMLElement, path: string): void {
     name.addEventListener("click", (e) => {
       e.stopPropagation();
+      if (this.isSelectionClick(e)) return;
       this.openNote(path);
     });
     name.addEventListener("mouseenter", (e) => {

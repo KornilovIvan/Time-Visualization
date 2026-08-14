@@ -57,6 +57,8 @@
   gap: 6px;
   box-sizing: border-box;
   outline: none;
+  /* All text in the view is selectable (task text, group names, dates) */
+  user-select: text;
 }
 
 .be-header {
@@ -749,7 +751,7 @@
 }
 
 .be-day-group-title {
-  font-size: 1.1em;
+  font-size: 1.2em;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text-normal);
@@ -762,7 +764,6 @@
 
 .be-day-group-name {
   cursor: pointer;
-  user-select: none;
   transition: color 120ms ease;
 }
 
@@ -998,15 +999,19 @@
   gap: 4px;
   word-break: break-word;
   color: var(--text-normal);
+  /* Allow selecting task text with the mouse (drag-select) */
+  user-select: text;
 }
 
 .be-task-inner {
-  text-decoration: line-through;
-  text-decoration-color: transparent;
   transition: text-decoration-color 0.4s ease;
 }
 
+/* Only done tasks carry the strikethrough. Open tasks must not have the
+   decoration at all — a transparent line-through shows up as a line over a
+   selection in some themes, so it would flash on highlight. */
 .be-task.is-done .be-task-inner {
+  text-decoration: line-through;
   text-decoration-color: currentColor;
 }
 
