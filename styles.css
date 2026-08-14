@@ -861,10 +861,16 @@
   font-size: 0.82em;
   line-height: 1.35;
   cursor: pointer;
+  position: relative;
 }
 
 .be-task-menu {
-  flex: none;
+  /* Floats over the task text on hover instead of pushing it aside */
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
   display: none;
   align-items: center;
   justify-content: center;
@@ -944,12 +950,18 @@
   min-width: 0;
   font-size: inherit;
   font-family: inherit;
+  line-height: inherit;
   color: var(--text-normal);
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--interactive-accent);
   outline: none;
   padding: 0 2px;
+  /* Multi-line editing: the field fills the task space and grows with content */
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 .be-task,
@@ -1005,6 +1017,8 @@
 
 .be-task-inner {
   transition: text-decoration-color 0.4s ease;
+  /* Preserve line breaks added while editing a task */
+  white-space: pre-wrap;
 }
 
 /* Only done tasks carry the strikethrough. Open tasks must not have the

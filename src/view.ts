@@ -961,10 +961,18 @@ export class TimeVisualizationView extends ItemView {
     const taskKey = `${t.filePath}:${t.line}`;
     this.editingTaskKey = taskKey;
 
-    const input = createEl("input");
+    const input = createEl("textarea");
     input.className = "be-task-edit";
     input.value = t.text;
     row.insertBefore(input, textEl);
+    // Auto-grow so the full multi-line content stays editable in place (the
+    // task must not collapse to a single line while editing)
+    const autosize = (): void => {
+      input.style.removeProperty("height");
+      input.style.height = `${input.scrollHeight}px`;
+    };
+    autosize();
+    input.addEventListener("input", autosize);
     input.focus();
     input.select();
 
@@ -1004,7 +1012,8 @@ export class TimeVisualizationView extends ItemView {
     };
 
     input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
+      // Enter saves; Shift+Enter inserts a new line
+      if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         finish(true, true);
       } else if (e.key === "Escape") {
