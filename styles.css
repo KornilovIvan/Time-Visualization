@@ -236,7 +236,7 @@
   padding-left: 2px;
 }
 .be-week .be-task-box {
-  padding: 0;
+  padding: 1px 0 0 0;
   margin-left: -1px;
 }
 .be-week .be-check-svg {
@@ -630,7 +630,7 @@
 }
 
 .be-month .be-task-box {
-  padding: 0;
+  padding: 1px 0 0 0;
   margin-left: -1px;
 }
 
@@ -851,7 +851,9 @@
 
 .be-task {
   display: flex;
-  align-items: center;
+  /* The checkbox stays on the first text line instead of centering vertically
+     on multi-line tasks (matches the native Obsidian task list) */
+  align-items: flex-start;
   gap: 6px;
   padding: 3px 4px;
   border-radius: 6px;
@@ -965,13 +967,16 @@
 .be-task-box {
   flex: none;
   display: inline-flex;
-  align-items: center;
+  /* Align the icon to the top of the row so the checkbox sits on the first
+     text line (multi-line tasks used to center it vertically). A small top
+     padding compensates the icon's internal viewBox offset (y=3). */
+  align-items: flex-start;
   justify-content: center;
   color: var(--text-muted);
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  padding: 2px;
+  padding: 2px 2px 0 0;
   cursor: pointer;
   border-radius: 0;
 }
@@ -1003,6 +1008,26 @@
 
 .be-task.is-done .be-task-inner {
   text-decoration-color: currentColor;
+}
+
+/* Inline markdown rendered inside task text */
+.be-task-inner code {
+  font-family: var(--font-monospace);
+  font-size: 0.88em;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.be-task-inner mark {
+  background: var(--text-highlight-bg);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.be-task-inner a {
+  color: var(--interactive-accent);
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .be-check-svg {

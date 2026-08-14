@@ -261,6 +261,15 @@ export class TimeVisualizationView extends ItemView {
     if (!key) return;
     const t = this.taskRefs.get(key);
     if (!t) return;
+    // Clicking a rendered markdown link inside a task must not toggle it
+    const link = (e.target as HTMLElement).closest("a");
+    if (link) {
+      e.stopPropagation();
+      e.preventDefault();
+      const href = link.getAttribute("href");
+      if (href) window.open(href, "_blank", "noopener");
+      return;
+    }
     e.stopPropagation();
     e.preventDefault();
     const box = taskEl.querySelector(".be-task-box") as HTMLElement | null;
@@ -745,7 +754,7 @@ export class TimeVisualizationView extends ItemView {
 
     const text = row.createDiv({ cls: "be-task-text" });
     const textInner = text.createSpan({ cls: "be-task-inner" });
-    textInner.setText(t.text);
+    textInner.innerHTML = renderInlineMarkdown(t.text);
 
     if (t.time) {
       text.createSpan({ cls: "be-task-time", text: " " + t.time });
@@ -942,9 +951,9 @@ export class TimeVisualizationView extends ItemView {
         window.setTimeout(release, 0);
       }
       if (save && v && v !== t.text) {
-        if (inner) inner.setText(v);
+        if (inner) inner.innerHTML = renderInlineMarkdown(v);
         void this.index.updateTaskText(t, v).catch(() => {
-          if (inner) inner.setText(t.text); // rollback on error
+          if (inner) inner.innerHTML = renderInlineMarkdown(t.text); // rollback on error
         });
       }
     };
@@ -1281,4 +1290,44 @@ function fileName(path: string): string {
 
 function addDays(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+/** Light inline markdown renderer for task text: bold, italic, strikethrough,
+    highlight, inline code, links and wiki-links. HTML is escaped first so user
+    text is never executed as markup. The full MarkdownRenderer is avoided for
+    performance — it is async and heavy when applied to hundreds of rows. */
+function renderInlineMarkdown(text: string): string {
+  let s = text
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">");
+
+  // Protect inline code so its contents are not touched by the other rules
+  const codes: string[] = [];
+  s = s.replace(/`([^`\n]+)`/g, (_m, c: string) => {
+    codes.push(c);
+    return `\u0000${codes.length - 1}\u0000`;
+  });
+
+  s = s.replace(/==([^=\n]+)==/g, "<mark>$1</mark>"); // highlight
+  s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>"); // bold
+  s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>"); // italic (not bold)
+  s = s.replace(/~~([^~\n]+)~~/g, "<s>$1</s>"); // strikethrough
+
+  // Wiki links: [[Note]] or [[Note|alias]] -> alias / note name (plain text)
+  s = s.replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_m, note: string, alias?: string) => {
+    return (alias || note).trim();
+  });
+
+  // Markdown links: [text](url) — only safe schemes become clickable links
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_m, label: string, url: string) => {
+    const href = url.trim();
+    if (/^(https?:|mailto:|#|\/)/.test(href)) return `<a href="${href}">${label}</a>`;
+    return label;
+  });
+
+  // Restore inline code
+  s = s.replace(/\u0000(\d+)\u0000/g, (_m, i: string) => `<code>${codes[Number(i)] ?? ""}</code>`);
+
+  return s;
 }
