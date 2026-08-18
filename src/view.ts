@@ -68,6 +68,10 @@ export class TimeVisualizationView extends ItemView {
   private mouseDownY = 0;
   /** Text was selected when the current click started — that click must only clear it */
   private hadSelection = false;
+  /** Priority picker popup for a group header */
+  private priorityMenu: HTMLElement | null = null;
+  /** Button that opened the priority menu (to toggle it closed on re-click) */
+  private priorityMenuAnchor: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: TimeVisualizationPlugin) {
     super(leaf);
@@ -119,6 +123,11 @@ export class TimeVisualizationView extends ItemView {
     } catch (e) {
       console.error("Time Visualization: index refresh failed", e);
     }
+    this.render();
+  }
+
+  /** Re-render the current level without rescanning (e.g. after priority edits) */
+  redraw(): void {
     this.render();
   }
 
@@ -587,6 +596,19 @@ export class TimeVisualizationView extends ItemView {
       cls: "be-day-month",
       text: `${MONTHS_EN[day.getMonth()]} ${day.getFullYear()}`,
     });
+    // Priority/reorder button in the day header (shown on hover over the header)
+    const prioBtn = head.createEl("button", {
+      cls: "be-day-priority",
+      attr: { "aria-label": "Reorder group priorities" },
+    });
+    prioBtn.setText("Priority");
+    head.addEventListener("mouseenter", () => prioBtn.addClass("is-show"));
+    head.addEventListener("mouseleave", () => prioBtn.removeClass("is-show"));
+    prioBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      this.showDayPriorityMenu(prioBtn, formatDate(day));
+    });
 
     this.fillDayBody(card, day, false);
   }
@@ -604,7 +626,7 @@ export class TimeVisualizationView extends ItemView {
       list.classList.add("be-hidden");
     } else {
       list.createDiv({ cls: "be-day-active-title", text: "Open tasks" });
-      for (const [path, gt] of this.groupTasksByFile(active)) {
+      for (const [path, gt] of this.sortedGroups(active, key)) {
         if (collapsible) this.buildCollapsedGroup(list, gt, path, key, compact, "active");
         else this.fillGroup(list, gt, path, key, compact);
       }
@@ -635,6 +657,32 @@ export class TimeVisualizationView extends ItemView {
       arr.push(t);
     }
     return groups;
+  }
+
+  /** Groups sorted by priority: the per-day order first, then the global
+      priority list, then unprioritized groups in their by-time order */
+  private sortedGroups(tasks: ParsedTask[], dateKey: string): Array<[string, ParsedTask[]]> {
+    const groups = this.groupTasksByFile(tasks);
+    const day = this.plugin.settings.dayOrder[dateKey] ?? [];
+    const dayPos = new Map<string, number>();
+    day.forEach((p, i) => {
+      if (groups.has(p)) dayPos.set(p, i);
+    });
+    const globalPos = new Map<string, number>();
+    this.plugin.settings.priorities.forEach((p, i) => globalPos.set(p, i));
+    return Array.from(groups.entries()).sort((a, b) => {
+      const ad = dayPos.get(a[0]);
+      const bd = dayPos.get(b[0]);
+      if (ad !== undefined && bd !== undefined) return ad - bd;
+      if (ad !== undefined) return -1;
+      if (bd !== undefined) return 1;
+      const ag = globalPos.get(a[0]);
+      const bg = globalPos.get(b[0]);
+      if (ag !== undefined && bg !== undefined) return ag - bg;
+      if (ag !== undefined) return -1;
+      if (bg !== undefined) return 1;
+      return 0; // stable sort keeps the existing by-time order
+    });
   }
 
   private createTaskGroup(container: HTMLElement, path: string, dayKey?: string): HTMLElement {
@@ -948,6 +996,132 @@ export class TimeVisualizationView extends ItemView {
       this.taskMenu = null;
     }
     this.taskMenuAnchor = null;
+  }
+
+  /** Day-header priority menu: lists the groups of this day and lets you drag
+      them into the desired order (per-day order). Same look and behavior as
+      the task menu. */
+  private showDayPriorityMenu(anchor: HTMLElement, dateKey: string): void {
+    // Re-click on the same button toggles the menu closed
+    if (this.priorityMenu && this.priorityMenuAnchor === anchor) {
+      this.closePriorityMenu();
+      return;
+    }
+    this.closePriorityMenu();
+    // Opening a fresh menu — clear the "just closed" guard so the next click
+    // is not swallowed
+    this.menuJustClosed = false;
+    this.priorityMenuAnchor = anchor;
+    // Keep the header button visible while the menu is open
+    anchor.addClass("is-open");
+
+    const popup = createDiv();
+    popup.className = "be-task-menu-popup be-priority-popup";
+
+    // Groups currently in this day, in their displayed (sorted) order
+    const tasks = this.index.getTasks(dateKey);
+    const active = tasks.filter((t) => !t.checked);
+    const order = this.sortedGroups(active, dateKey).map(([p]) => p);
+
+    if (order.length === 0) {
+      const hint = popup.createDiv({ cls: "be-task-menu-item be-priority-hint" });
+      hint.createSpan({ text: "No open groups in this day" });
+    }
+
+    // Drag to reorder the per-day group order
+    let dragIndex = -1;
+    const clearOver = (): void => {
+      popup.querySelectorAll(".is-over").forEach((el) => el.removeClass("is-over"));
+    };
+    const clearDrag = (): void => {
+      dragIndex = -1;
+      clearOver();
+      popup.querySelectorAll(".is-dragging").forEach((el) => el.removeClass("is-dragging"));
+    };
+    const commitOrder = (next: string[]): void => {
+      this.plugin.settings.dayOrder[dateKey] = next;
+      void this.plugin.saveSettings();
+      this.closePriorityMenu();
+      this.render();
+    };
+    order.forEach((p, i) => {
+      const row = popup.createDiv({
+        cls: "be-task-menu-item be-priority-row",
+        attr: { draggable: "true" },
+      });
+      row.dataset.index = String(i);
+      row.createSpan({ cls: "be-priority-grip", text: "⠿" });
+      row.createSpan({ cls: "be-priority-name", text: fileName(p) });
+      row.addEventListener("dragstart", (e) => {
+        dragIndex = i;
+        row.addClass("is-dragging");
+        if (e.dataTransfer) {
+          e.dataTransfer.effectAllowed = "move";
+          e.dataTransfer.setData("text/plain", String(i));
+        }
+      });
+      row.addEventListener("dragend", clearDrag);
+      row.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+        const over = Number(row.dataset.index);
+        if (over !== dragIndex) {
+          clearOver();
+          row.addClass("is-over");
+        }
+      });
+      row.addEventListener("dragleave", () => row.removeClass("is-over"));
+      row.addEventListener("drop", (e) => {
+        e.preventDefault();
+        const to = Number(row.dataset.index);
+        if (dragIndex >= 0 && to >= 0 && dragIndex !== to) {
+          const next = [...order];
+          const [moved] = next.splice(dragIndex, 1);
+          next.splice(to, 0, moved);
+          commitOrder(next);
+        } else {
+          clearDrag();
+        }
+      });
+    });
+
+    document.body.appendChild(popup);
+    this.priorityMenu = popup;
+
+    const rect = anchor.getBoundingClientRect();
+    const popupW = popup.offsetWidth || 220;
+    popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
+    popup.style.top = `${rect.bottom + 4}px`;
+
+    // Close on a click outside the popup; the following click event must not
+    // toggle a task (the user just wanted to dismiss the menu). Clicks on the
+    // anchor button are ignored here — its click handler toggles the menu.
+    const close = (ev: MouseEvent): void => {
+      if (popup.contains(ev.target as Node)) return;
+      if (anchor.contains(ev.target as Node)) return;
+      this.menuJustClosed = true;
+      this.closePriorityMenu();
+      document.removeEventListener("mousedown", close, true);
+      document.removeEventListener("wheel", onScroll, true);
+    };
+    document.addEventListener("mousedown", close, true);
+    const onScroll = (): void => {
+      this.closePriorityMenu();
+      document.removeEventListener("mousedown", close, true);
+      document.removeEventListener("wheel", onScroll, true);
+    };
+    document.addEventListener("wheel", onScroll, true);
+  }
+
+  private closePriorityMenu(): void {
+    if (this.priorityMenu) {
+      this.priorityMenu.remove();
+      this.priorityMenu = null;
+    }
+    if (this.priorityMenuAnchor) {
+      this.priorityMenuAnchor.removeClass("is-open");
+    }
+    this.priorityMenuAnchor = null;
   }
 
   /** Inline editing of the task text (day card only).

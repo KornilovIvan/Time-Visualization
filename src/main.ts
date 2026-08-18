@@ -24,6 +24,10 @@ export interface TimeVisualizationSettings {
   recordDoneTime: boolean;
   /** Open the view automatically every time Obsidian starts */
   openOnStartup: boolean;
+  /** Ordered list of prioritized notes (first = highest priority); others sort last */
+  priorities: string[];
+  /** Per-day group order overrides, keyed by date: array of note paths (first = top) */
+  dayOrder: Record<string, string[]>;
 }
 
 export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
@@ -36,6 +40,8 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   recordDoneTime: false,
   // Off by default: auto-opening the view on every start can be intrusive
   openOnStartup: false,
+  priorities: [],
+  dayOrder: {},
 };
 
 class MultiSuggest extends AbstractInputSuggest<string> {
@@ -182,11 +188,14 @@ export default class TimeVisualizationPlugin extends Plugin {
   }
 
   async loadSettings(): Promise<void> {
-    this.settings = Object.assign(
-      {},
-      DEFAULT_SETTINGS,
-      await this.loadData() as Partial<TimeVisualizationSettings>
-    );
+    const data = await this.loadData() as Partial<TimeVisualizationSettings> | null;
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
+    // Migration: prior versions stored priorities as Record<path, number>;
+    // now it is an ordered array. Any invalid value falls back to an empty
+    // list so the view does not crash on render.
+    if (!Array.isArray(this.settings.priorities)) {
+      this.settings.priorities = [];
+    }
   }
 
   async saveSettings(): Promise<void> {
@@ -361,6 +370,99 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         })
       );
+
+    new Setting(containerEl).setName("Priority").setHeading();
+    new Setting(containerEl)
+      .setName("Global note priorities")
+      .setDesc("The order of this list is the priority: the first note is highest. Drag to reorder; notes not in the list stay at the bottom of the day view. You can also reorder from the group header in the view.");
+
+    const pContainer = containerEl.createDiv({ cls: "tv-priority-list" });
+    const renderPriorityList = (): void => {
+      pContainer.empty();
+      const list = this.plugin.settings.priorities;
+      let dragIndex = -1;
+      const removeOver = (): void => {
+        pContainer.querySelectorAll(".is-over").forEach((el) => el.removeClass("is-over"));
+      };
+      list.forEach((path, i) => {
+        const row = pContainer.createDiv({ cls: "tv-priority-row", attr: { draggable: "true" } });
+        row.dataset.index = String(i);
+        row.createSpan({ cls: "tv-priority-grip", text: "⠿" });
+        row.createSpan({ cls: "tv-priority-name", text: path });
+        const del = row.createEl("button", { cls: "tv-priority-del", text: "×" });
+        del.addEventListener("click", () => {
+          this.plugin.settings.priorities = list.filter((_, j) => j !== i);
+          void this.plugin.saveSettings();
+          renderPriorityList();
+          this.plugin.getView()?.redraw();
+        });
+        row.addEventListener("dragstart", (e) => {
+          dragIndex = i;
+          row.addClass("is-dragging");
+          if (e.dataTransfer) {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", String(i));
+          }
+        });
+        row.addEventListener("dragend", () => {
+          dragIndex = -1;
+          removeOver();
+          pContainer.querySelectorAll(".is-dragging").forEach((el) => el.removeClass("is-dragging"));
+        });
+        row.addEventListener("dragover", (e) => {
+          e.preventDefault();
+          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+          const over = Number(row.dataset.index);
+          if (over !== dragIndex) {
+            removeOver();
+            row.addClass("is-over");
+          }
+        });
+        row.addEventListener("dragleave", () => row.removeClass("is-over"));
+        row.addEventListener("drop", (e) => {
+          e.preventDefault();
+          const to = Number(row.dataset.index);
+          if (dragIndex >= 0 && to >= 0 && dragIndex !== to) {
+            const next = [...list];
+            const [moved] = next.splice(dragIndex, 1);
+            next.splice(to, 0, moved);
+            this.plugin.settings.priorities = next;
+            void this.plugin.saveSettings();
+            renderPriorityList();
+            this.plugin.getView()?.redraw();
+          }
+          dragIndex = -1;
+          removeOver();
+        });
+      });
+      // Add a new note to the priority list
+      const addRow = pContainer.createDiv({ cls: "tv-priority-row tv-priority-add" });
+      const pick = addRow.createEl("input", {
+        cls: "tv-priority-pick",
+        type: "text",
+        attr: { placeholder: "Note path…" },
+      });
+      const addBtn = addRow.createEl("button", { cls: "tv-priority-add-btn", text: "Add" });
+      const doAdd = (): void => {
+        const path = pick.value.trim();
+        if (!path || list.includes(path)) return;
+        this.plugin.settings.priorities = [...list, path];
+        void this.plugin.saveSettings();
+        renderPriorityList();
+        this.plugin.getView()?.redraw();
+      };
+      addBtn.addEventListener("click", doAdd);
+      addRow.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") doAdd();
+      });
+      new MultiSuggest(this.app, pick, this.plugin.collectSources(), (v) => {
+        if (v) {
+          pick.value = v;
+          doAdd();
+        }
+      }, "path");
+    };
+    renderPriorityList();
 
     new Setting(containerEl)
       .setName("Apply")

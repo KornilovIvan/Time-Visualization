@@ -3,6 +3,62 @@
   width: 100%;
 }
 
+/* Global priority editor in the settings tab */
+.tv-priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+.tv-priority-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tv-priority-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+.tv-priority-grip {
+  flex: none;
+  color: var(--text-faint);
+  cursor: grab;
+  user-select: none;
+}
+.tv-priority-del {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1em;
+  line-height: 1;
+}
+.tv-priority-del:hover {
+  color: var(--text-error, var(--text-normal));
+}
+.tv-priority-row.is-dragging {
+  opacity: 0.5;
+}
+.tv-priority-row.is-over {
+  outline: 1px dashed var(--interactive-accent);
+  outline-offset: -1px;
+}
+.tv-priority-add .tv-priority-pick {
+  flex: 1;
+  min-width: 0;
+}
+.tv-priority-add-btn {
+  flex: none;
+}
+
 .tv-multi {
   display: flex;
   flex-direction: column;
@@ -311,6 +367,7 @@
 }
 
 .be-day-head {
+  position: relative;
   display: flex;
   align-items: baseline;
   gap: 6px;
@@ -753,11 +810,83 @@
 }
 
 .be-day-group-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-size: 1.2em;
   font-weight: 600;
   letter-spacing: 0.02em;
   color: var(--text-normal);
   padding: 4px 10px 2px;
+}
+
+/* Priority/reorder button in the day header (shown on hover).
+   Absolutely positioned so it never changes the header height — the bottom
+   line stays in place */
+.be-day-priority {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 120ms ease, color 120ms ease;
+}
+.be-day-head:hover .be-day-priority,
+.be-day-priority.is-open,
+.be-day-priority.is-show {
+  display: inline-flex;
+}
+.be-day-priority:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+/* Priority popup: the ordered list of prioritized notes (drag to reorder).
+   Reuses the task menu look (be-task-menu-popup / items). */
+.be-priority-popup {
+  min-width: 220px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.be-priority-row {
+  cursor: grab;
+}
+.be-priority-row.is-dragging {
+  opacity: 0.5;
+}
+.be-priority-row.is-over {
+  background: var(--background-modifier-hover);
+}
+.be-priority-grip {
+  flex: none;
+  color: var(--text-faint);
+  cursor: grab;
+}
+.be-priority-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.be-priority-hint {
+  color: var(--text-faint);
+  font-size: 0.85em;
+  cursor: default;
 }
 
 .be-day-slide .be-day-group-title {
