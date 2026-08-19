@@ -274,7 +274,7 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("Time Visualization").setHeading();
+    new Setting(containerEl).setName("Settings").setHeading();
 
     const sources = this.plugin.collectSources();
     const tags = this.plugin.collectTags();
