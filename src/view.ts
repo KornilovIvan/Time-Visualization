@@ -131,6 +131,17 @@ export class TimeVisualizationView extends ItemView {
     this.render();
   }
 
+  /** Refill the visible slides in place — no track/header recreation, so the
+      day stays on screen while the group order updates */
+  private refillCurrent(): void {
+    if (!this.track) return;
+    const meta = this.currentMeta;
+    for (const slide of Array.from(this.track.querySelectorAll<HTMLElement>("." + meta.slideCls))) {
+      const key = slide.dataset.key;
+      if (key) meta.fill(slide, key);
+    }
+  }
+
   private onFileChanged(path: string): void {
     if (this.debounceTimer !== null) window.clearTimeout(this.debounceTimer);
     this.debounceTimer = window.setTimeout(async () => {
@@ -1026,62 +1037,69 @@ export class TimeVisualizationView extends ItemView {
     if (order.length === 0) {
       const hint = popup.createDiv({ cls: "be-task-menu-item be-priority-hint" });
       hint.createSpan({ text: "No open groups in this day" });
+    } else {
+      const tip = popup.createDiv({ cls: "be-priority-tip" });
+      tip.createSpan({ text: "Use the arrows to reorder priority" });
     }
 
-    // Drag to reorder the per-day group order
-    let dragIndex = -1;
-    const clearOver = (): void => {
-      popup.querySelectorAll(".is-over").forEach((el) => el.removeClass("is-over"));
+    // Reorder with the up/down arrows only (no drag & drop)
+    let rows: HTMLElement[] = [];
+    const renumber = (): void => {
+      rows.forEach((r, j) => {
+        r.dataset.index = String(j);
+        const num = r.querySelector(".be-priority-num");
+        if (num) num.setText(String(j + 1));
+      });
     };
-    const clearDrag = (): void => {
-      dragIndex = -1;
-      clearOver();
-      popup.querySelectorAll(".is-dragging").forEach((el) => el.removeClass("is-dragging"));
-    };
-    const commitOrder = (next: string[]): void => {
-      this.plugin.settings.dayOrder[dateKey] = next;
+    const commitOrder = (): void => {
+      const order = rows.map((r) => r.dataset.path ?? "").filter(Boolean);
+      this.plugin.settings.dayOrder[dateKey] = order;
       void this.plugin.saveSettings();
-      this.closePriorityMenu();
-      this.render();
+      this.refillCurrent();
+    };
+    // Move a row by one position via the up/down arrows (FLIP glide)
+    const moveOne = (row: HTMLElement, dir: 1 | -1): void => {
+      const from = rows.indexOf(row);
+      const to = from + dir;
+      if (from < 0 || to < 0 || to >= rows.length) return;
+      const prev = rows.map((r) => r.getBoundingClientRect().top);
+      popup.insertBefore(row, dir === 1 ? (rows[to + 1] ?? null) : rows[to]);
+      rows = Array.from(popup.querySelectorAll<HTMLElement>(".be-priority-row"));
+      rows.forEach((r, i) => {
+        const dy = prev[i] - r.getBoundingClientRect().top;
+        if (dy !== 0) {
+          r.style.transform = `translateY(${dy}px)`;
+          void r.offsetHeight;
+          r.style.removeProperty("transform");
+        }
+      });
+      renumber();
+      commitOrder();
     };
     order.forEach((p, i) => {
-      const row = popup.createDiv({
-        cls: "be-task-menu-item be-priority-row",
-        attr: { draggable: "true" },
-      });
+      const row = popup.createDiv({ cls: "be-task-menu-item be-priority-row" });
+      rows.push(row);
       row.dataset.index = String(i);
-      row.createSpan({ cls: "be-priority-grip", text: "⠿" });
+      row.dataset.path = p;
+      row.createSpan({ cls: "be-priority-num", text: String(i + 1) });
       row.createSpan({ cls: "be-priority-name", text: fileName(p) });
-      row.addEventListener("dragstart", (e) => {
-        dragIndex = i;
-        row.addClass("is-dragging");
-        if (e.dataTransfer) {
-          e.dataTransfer.effectAllowed = "move";
-          e.dataTransfer.setData("text/plain", String(i));
-        }
+      // Gently highlight groups that are prioritized globally (in settings);
+      // the "Global" label sits right after the note name
+      if (this.plugin.settings.priorities.includes(p)) {
+        row.addClass("is-global");
+        row.createSpan({ cls: "be-priority-tag", text: "Global" });
+      }
+      const upBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move up" } });
+      setIcon(upBtn, "chevron-up");
+      upBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        moveOne(row, -1);
       });
-      row.addEventListener("dragend", clearDrag);
-      row.addEventListener("dragover", (e) => {
-        e.preventDefault();
-        if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-        const over = Number(row.dataset.index);
-        if (over !== dragIndex) {
-          clearOver();
-          row.addClass("is-over");
-        }
-      });
-      row.addEventListener("dragleave", () => row.removeClass("is-over"));
-      row.addEventListener("drop", (e) => {
-        e.preventDefault();
-        const to = Number(row.dataset.index);
-        if (dragIndex >= 0 && to >= 0 && dragIndex !== to) {
-          const next = [...order];
-          const [moved] = next.splice(dragIndex, 1);
-          next.splice(to, 0, moved);
-          commitOrder(next);
-        } else {
-          clearDrag();
-        }
+      const downBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move down" } });
+      setIcon(downBtn, "chevron-down");
+      downBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        moveOne(row, 1);
       });
     });
 

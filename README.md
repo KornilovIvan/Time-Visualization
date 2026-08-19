@@ -25,6 +25,7 @@ Everything is one continuous view: switch levels with a click, page through time
 - **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
 - **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
 - **Completion order** — completed tasks keep the order they were done in across reloads (writes a `[done:: …]` marker when enabled).
+- **Group priorities** — set an ordered priority list for notes in Settings, or reorder a day's groups right from the day header. Notes without a priority stay at the bottom.
 - **Filters** — limit parsing to specific folders/notes and tags.
 - **Open on startup** — optionally open the view automatically every time Obsidian starts.
 - **Keyboard friendly** — arrow keys navigate time.
@@ -75,6 +76,7 @@ In the plugin settings tab:
 - **Date format** — inline fields (`[date:: …]`), Obsidian Tasks (`📅`), or a custom regex.
 - **Record completion time** — write a `[done:: …]` marker when you complete a task, keeping the done order across reloads. Off by default.
 - **Open view on startup** — open the view automatically every time Obsidian starts. Off by default.
+- **Priority** — an ordered list of notes; their groups sort to the top of the day view. Reorder with the ↑/↓ arrows (first = highest). A per-day order can be set from the day header's Priority button.
 - **Rescan** — rebuild the index with the new filters.
 
 ## Install

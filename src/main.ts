@@ -7,6 +7,7 @@ import {
   Setting,
   TFolder,
   WorkspaceLeaf,
+  setIcon,
 } from "obsidian";
 import { TimeVisualizationView, VIEW_TYPE } from "./view";
 import { DateFormat } from "./parser";
@@ -273,7 +274,7 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    new Setting(containerEl).setName("Task parsing").setHeading();
+    new Setting(containerEl).setName("Time Visualization").setHeading();
 
     const sources = this.plugin.collectSources();
     const tags = this.plugin.collectTags();
@@ -371,24 +372,65 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl).setName("Priority").setHeading();
     new Setting(containerEl)
-      .setName("Global note priorities")
-      .setDesc("The order of this list is the priority: the first note is highest. Drag to reorder; notes not in the list stay at the bottom of the day view. You can also reorder from the group header in the view.");
-
-    const pContainer = containerEl.createDiv({ cls: "tv-priority-list" });
+      .setName("Priority")
+      .setDesc("The order of the list is the priority: the first note is highest. Notes not in the list stay at the bottom of the day view. You can also reorder from the day header in the view.")
+      .then((setting) => {
+        const pContainer = setting.infoEl.createDiv({ cls: "tv-priority-list" });
     const renderPriorityList = (): void => {
       pContainer.empty();
+      pContainer.createDiv({ cls: "be-priority-tip", text: "Use the arrows to reorder priority." });
       const list = this.plugin.settings.priorities;
-      let dragIndex = -1;
-      const removeOver = (): void => {
-        pContainer.querySelectorAll(".is-over").forEach((el) => el.removeClass("is-over"));
+      let rows: HTMLElement[] = [];
+      // The "add note" field must always stay below the list rows
+      let addRow: HTMLElement | null = null;
+      const renumber = (): void => {
+        rows.forEach((r, j) => {
+          const num = r.querySelector(".be-priority-num");
+          if (num) num.setText(String(j + 1));
+        });
+      };
+      const persist = (): void => {
+        this.plugin.settings.priorities = rows.map((r) => r.dataset.path ?? "").filter(Boolean);
+        void this.plugin.saveSettings();
+        this.plugin.getView()?.redraw();
+      };
+      const moveOne = (row: HTMLElement, dir: 1 | -1): void => {
+        const from = rows.indexOf(row);
+        const to = from + dir;
+        if (from < 0 || to < 0 || to >= rows.length) return;
+        const prev = rows.map((r) => r.getBoundingClientRect().top);
+        pContainer.insertBefore(row, dir === 1 ? (rows[to + 1] ?? addRow) : rows[to]);
+        rows = Array.from(pContainer.querySelectorAll<HTMLElement>(".be-priority-row"));
+        rows.forEach((r, i) => {
+          const dy = prev[i] - r.getBoundingClientRect().top;
+          if (dy !== 0) {
+            r.style.transform = `translateY(${dy}px)`;
+            void r.offsetHeight;
+            r.style.removeProperty("transform");
+          }
+        });
+        renumber();
+        persist();
       };
       list.forEach((path, i) => {
-        const row = pContainer.createDiv({ cls: "tv-priority-row", attr: { draggable: "true" } });
-        row.dataset.index = String(i);
-        row.createSpan({ cls: "tv-priority-grip", text: "⠿" });
-        row.createSpan({ cls: "tv-priority-name", text: path });
+        const row = pContainer.createDiv({ cls: "tv-priority-row be-priority-row" });
+        rows.push(row);
+        row.dataset.path = path;
+        row.createSpan({ cls: "be-priority-num", text: String(i + 1) });
+        row.createSpan({ cls: "be-priority-name", text: path });
+        const upBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move up" } });
+        setIcon(upBtn, "chevron-up");
+        upBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          moveOne(row, -1);
+        });
+        const downBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move down" } });
+        setIcon(downBtn, "chevron-down");
+        downBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          moveOne(row, 1);
+        });
         const del = row.createEl("button", { cls: "tv-priority-del", text: "×" });
         del.addEventListener("click", () => {
           this.plugin.settings.priorities = list.filter((_, j) => j !== i);
@@ -396,47 +438,9 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
           renderPriorityList();
           this.plugin.getView()?.redraw();
         });
-        row.addEventListener("dragstart", (e) => {
-          dragIndex = i;
-          row.addClass("is-dragging");
-          if (e.dataTransfer) {
-            e.dataTransfer.effectAllowed = "move";
-            e.dataTransfer.setData("text/plain", String(i));
-          }
-        });
-        row.addEventListener("dragend", () => {
-          dragIndex = -1;
-          removeOver();
-          pContainer.querySelectorAll(".is-dragging").forEach((el) => el.removeClass("is-dragging"));
-        });
-        row.addEventListener("dragover", (e) => {
-          e.preventDefault();
-          if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-          const over = Number(row.dataset.index);
-          if (over !== dragIndex) {
-            removeOver();
-            row.addClass("is-over");
-          }
-        });
-        row.addEventListener("dragleave", () => row.removeClass("is-over"));
-        row.addEventListener("drop", (e) => {
-          e.preventDefault();
-          const to = Number(row.dataset.index);
-          if (dragIndex >= 0 && to >= 0 && dragIndex !== to) {
-            const next = [...list];
-            const [moved] = next.splice(dragIndex, 1);
-            next.splice(to, 0, moved);
-            this.plugin.settings.priorities = next;
-            void this.plugin.saveSettings();
-            renderPriorityList();
-            this.plugin.getView()?.redraw();
-          }
-          dragIndex = -1;
-          removeOver();
-        });
       });
       // Add a new note to the priority list
-      const addRow = pContainer.createDiv({ cls: "tv-priority-row tv-priority-add" });
+      addRow = pContainer.createDiv({ cls: "tv-priority-row tv-priority-add" });
       const pick = addRow.createEl("input", {
         cls: "tv-priority-pick",
         type: "text",
@@ -462,7 +466,8 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
         }
       }, "path");
     };
-    renderPriorityList();
+      renderPriorityList();
+    });
 
     new Setting(containerEl)
       .setName("Apply")

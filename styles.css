@@ -23,11 +23,18 @@
   white-space: nowrap;
   font-size: 0.9em;
 }
-.tv-priority-grip {
+.tv-priority-num {
   flex: none;
-  color: var(--text-faint);
-  cursor: grab;
+  width: 20px;
+  text-align: center;
+  color: var(--text-normal);
+  font-weight: 400;
   user-select: none;
+}
+.tv-priority-tip {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
 }
 .tv-priority-del {
   flex: none;
@@ -863,7 +870,8 @@
   overflow-y: auto;
 }
 .be-priority-row {
-  cursor: grab;
+  /* Reorder happens via the up/down arrows (no drag), with a smooth glide */
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), background 120ms ease;
 }
 .be-priority-row.is-dragging {
   opacity: 0.5;
@@ -871,10 +879,57 @@
 .be-priority-row.is-over {
   background: var(--background-modifier-hover);
 }
-.be-priority-grip {
+.be-priority-num {
   flex: none;
-  color: var(--text-faint);
-  cursor: grab;
+  width: 20px;
+  text-align: center;
+  color: var(--text-normal);
+  font-weight: 400;
+}
+.be-priority-tip {
+  padding: 4px 10px 6px;
+  font-size: 0.72em;
+  color: var(--text-muted);
+  cursor: default;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 4px;
+}
+/* Gentle highlight for groups that are prioritized globally */
+.be-priority-row.is-global {
+  background: var(--background-modifier-hover);
+}
+.be-priority-tag {
+  flex: none;
+  margin-left: 6px;
+  font-size: 0.68em;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+/* Up/down arrow buttons on each priority row */
+.be-priority-arrow {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.be-priority-arrow:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+.be-priority-arrow svg {
+  width: 1.05em;
+  height: 1.05em;
 }
 .be-priority-name {
   flex: 1;
