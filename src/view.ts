@@ -8,6 +8,7 @@ import {
 import type TimeVisualizationPlugin from "./main";
 import { TaskIndex } from "./taskIndex";
 import { ParsedTask, formatDate, parseDate, startOfDay } from "./parser";
+import { flipReorder } from "./flip";
 
 export const VIEW_TYPE = "time-visualization-view";
 
@@ -1065,14 +1066,7 @@ export class TimeVisualizationView extends ItemView {
       const prev = rows.map((r) => r.getBoundingClientRect().top);
       popup.insertBefore(row, dir === 1 ? (rows[to + 1] ?? null) : rows[to]);
       rows = Array.from(popup.querySelectorAll<HTMLElement>(".be-priority-row"));
-      rows.forEach((r, i) => {
-        const dy = prev[i] - r.getBoundingClientRect().top;
-        if (dy !== 0) {
-          r.style.transform = `translateY(${dy}px)`;
-          void r.offsetHeight;
-          r.style.removeProperty("transform");
-        }
-      });
+      flipReorder(rows, prev);
       renumber();
       commitOrder();
     };

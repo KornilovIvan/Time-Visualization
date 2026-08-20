@@ -23,14 +23,6 @@
   white-space: nowrap;
   font-size: 0.9em;
 }
-.tv-priority-num {
-  flex: none;
-  width: 20px;
-  text-align: center;
-  color: var(--text-normal);
-  font-weight: 400;
-  user-select: none;
-}
 .tv-priority-tip {
   font-size: 0.8em;
   color: var(--text-muted);
@@ -872,12 +864,6 @@
 .be-priority-row {
   /* Reorder happens via the up/down arrows (no drag), with a smooth glide */
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), background 120ms ease;
-}
-.be-priority-row.is-dragging {
-  opacity: 0.5;
-}
-.be-priority-row.is-over {
-  background: var(--background-modifier-hover);
 }
 .be-priority-num {
   flex: none;

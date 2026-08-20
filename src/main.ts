@@ -5,12 +5,14 @@ import {
   Plugin,
   PluginSettingTab,
   Setting,
+  TFile,
   TFolder,
   WorkspaceLeaf,
   setIcon,
 } from "obsidian";
 import { TimeVisualizationView, VIEW_TYPE } from "./view";
 import { DateFormat } from "./parser";
+import { flipReorder } from "./flip";
 
 export interface TimeVisualizationSettings {
   /** Sources: folders (path without extension) or full note paths. Empty = whole vault */
@@ -153,6 +155,29 @@ export default class TimeVisualizationPlugin extends Plugin {
     });
 
     this.registerView(VIEW_TYPE, (leaf: WorkspaceLeaf) => new TimeVisualizationView(leaf, this));
+
+    // Keep priorities bound to a note when it is moved to another folder or
+    // renamed — the stored path would otherwise stop matching the new path
+    this.registerEvent(
+      this.app.vault.on("rename", (file, oldPath) => {
+        if (!(file instanceof TFile) || oldPath === file.path) return;
+        const next = file.path;
+        let changed = false;
+        if (this.settings.priorities.includes(oldPath)) {
+          this.settings.priorities = this.settings.priorities.map((p) => (p === oldPath ? next : p));
+          changed = true;
+        }
+        for (const date of Object.keys(this.settings.dayOrder)) {
+          const arr = this.settings.dayOrder[date];
+          if (arr.includes(oldPath)) {
+            this.settings.dayOrder[date] = arr.map((p) => (p === oldPath ? next : p));
+            changed = true;
+          }
+        }
+        if (changed) void this.saveSettings();
+        this.getView()?.refresh();
+      })
+    );
 
     this.addCommand({
       id: "open",
@@ -400,14 +425,7 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
         const prev = rows.map((r) => r.getBoundingClientRect().top);
         pContainer.insertBefore(row, dir === 1 ? (rows[to + 1] ?? addRow) : rows[to]);
         rows = Array.from(pContainer.querySelectorAll<HTMLElement>(".be-priority-row"));
-        rows.forEach((r, i) => {
-          const dy = prev[i] - r.getBoundingClientRect().top;
-          if (dy !== 0) {
-            r.style.transform = `translateY(${dy}px)`;
-            void r.offsetHeight;
-            r.style.removeProperty("transform");
-          }
-        });
+        flipReorder(rows, prev);
         renumber();
         persist();
       };
