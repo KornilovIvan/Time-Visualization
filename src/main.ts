@@ -72,7 +72,39 @@ class MultiSuggest extends AbstractInputSuggest<string> {
     const q = query.trim().toLowerCase();
     this.query = q;
     if (!q) return this.items.slice(0, 50);
-    return this.items.filter((i) => i.toLowerCase().includes(q)).slice(0, 20);
+    return this.items
+      .filter((i) => {
+        const lower = i.toLowerCase();
+        if (lower.includes(q)) return true;
+        // Match by the bare name (last segment, no ".md", leading "_" ignored)
+        const base = i
+          .slice(i.lastIndexOf("/") + 1)
+          .replace(/\.md$/i, "")
+          .replace(/^_/, "")
+          .toLowerCase();
+        return base.includes(q);
+      })
+      .sort((a, b) => {
+        // Name matches rank above path-only matches
+        const an = a
+          .slice(a.lastIndexOf("/") + 1)
+          .replace(/\.md$/i, "")
+          .replace(/^_/, "")
+          .toLowerCase()
+          .includes(q)
+          ? 0
+          : 1;
+        const bn = b
+          .slice(b.lastIndexOf("/") + 1)
+          .replace(/\.md$/i, "")
+          .replace(/^_/, "")
+          .toLowerCase()
+          .includes(q)
+          ? 0
+          : 1;
+        return an - bn;
+      })
+      .slice(0, 100);
   }
 
   renderSuggestion(value: string, el: HTMLElement): void {
