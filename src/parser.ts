@@ -104,6 +104,15 @@ export function parseTaskLine(
     return "";
   });
 
+  // A completed task may carry only a [done:: ...] marker instead of a date
+  // field (the marker replaces [date:: ...] on completion). Fall back to the
+  // date embedded in the completion timestamp (YYYY-MM-DD) so the task stays
+  // attached to its day.
+  if (!date && done) {
+    const d = done.trim().slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) date = d;
+  }
+
   // Drop leftover "|" separators, trailing calendar icons and double spaces
   text = text
     .replace(/(?:\s*\|)+\s*$/g, "")

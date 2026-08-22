@@ -168,20 +168,38 @@ export class TaskIndex {
     // is modified solely for the checkbox
     if (this.plugin.settings.recordDoneTime) {
       if (checked) {
-        // Returning the task to open — strip the completion marker (covers a
-        // marker left behind when the user unchecked the task manually)
-        lines[task.line] = lines[task.line]
-          .replace(/\[done::\s*[^\]]*\]/g, "")
-          .replace(/(?:\s*\|)+\s*$/g, "")
-          .trimEnd();
+        // Returning the task to open — turn [done:: ...] back into [date:: ...]
+        // so the date is restored and fields never duplicate
+        const doneRe = /\[done::\s*([^\]]*)\]/;
+        const dm = doneRe.exec(lines[task.line]);
+        if (dm) {
+          const doneVal = dm[1].trim();
+          const datePart = /^\d{4}-\d{2}-\d{2}/.test(doneVal) ? doneVal.slice(0, 10) : "";
+          lines[task.line] = lines[task.line].replace(
+            doneRe,
+            datePart ? `[date:: ${datePart}]` : ""
+          );
+        }
+        lines[task.line] = lines[task.line].replace(/(?:\s*\|)+\s*$/g, "").trimEnd();
       } else {
-        // Marking done — replace any leftover marker, then stamp the completion
-        // time so the order of completion survives a reload (no duplicates)
-        lines[task.line] =
-          lines[task.line]
-            .replace(/\[done::\s*[^\]]*\]/g, "")
-            .replace(/(?:\s*\|)+\s*$/g, "")
-            .trimEnd() + ` |[done:: ${new Date().toISOString()}]`;
+        // Marking done — the [date:: ...] field becomes the [done:: ...] marker
+        // (single date-like field, no duplicate entries). Other formats keep the
+        // old behavior and just append the marker.
+        const now = new Date().toISOString();
+        if (task.format === "legacy") {
+          const dateRe = /\[date::\s*[^\]]*\]/;
+          if (dateRe.test(lines[task.line])) {
+            lines[task.line] = lines[task.line].replace(dateRe, `[done:: ${now}]`);
+          } else {
+            lines[task.line] = lines[task.line].trimEnd() + ` |[done:: ${now}]`;
+          }
+        } else {
+          lines[task.line] =
+            lines[task.line]
+              .replace(/\[done::\s*[^\]]*\]/g, "")
+              .replace(/(?:\s*\|)+\s*$/g, "")
+              .trimEnd() + ` |[done:: ${now}]`;
+        }
       }
     }
 
@@ -246,11 +264,17 @@ export class TaskIndex {
       datePart = task.date ? ` 📅 ${task.date}` : "";
       timePart = task.time ? ` ⏰ ${task.time}` : "";
     } else if (task.format === "legacy") {
-      datePart = task.date ? ` |[date:: ${task.date}]` : "";
       timePart = task.time ? ` |[time:: ${task.time}]` : "";
+      if (checked && task.done) {
+        // A done task carries the completion marker as its date field —
+        // writing [date::] and [done::] together would duplicate the entry
+        datePart = ` |[done:: ${task.done}]`;
+      } else {
+        datePart = task.date ? ` |[date:: ${task.date}]` : "";
+      }
     }
-    // Keep the completion marker so the done order survives an edit
-    const donePart = task.done ? ` |[done:: ${task.done}]` : "";
+    // Non-legacy formats keep the completion marker appended after the date
+    const donePart = task.format !== "legacy" && task.done ? ` |[done:: ${task.done}]` : "";
     // The space between marker and checkbox is required, otherwise the line
     // stops being recognized as a task
     lines[task.line] =

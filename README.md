@@ -24,7 +24,7 @@ Everything is one continuous view: switch levels with a click, page through time
 - **Parses tasks from all notes** — no manual aggregation; tasks are grouped by their source note.
 - **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
 - **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
-- **Completion order** — completed tasks keep the order they were done in across reloads (writes a `[done:: …]` marker when enabled).
+- **Completion order** — on completion the `[date:: …]` field becomes a `[done:: …]` marker, so completed tasks keep their order across reloads.
 - **Group priorities** — set an ordered priority list for notes in Settings, or reorder a day's groups right from the day header. Notes without a priority stay at the bottom.
 - **Filters** — limit parsing to specific folders/notes and tags.
 - **Open on startup** — optionally open the view automatically every time Obsidian starts.
@@ -74,7 +74,7 @@ In the plugin settings tab:
 - **Sources (folders and notes)** — folders or specific note paths to parse. Empty = the whole vault.
 - **Only parse tags** — show only tasks carrying any of the selected tags. Empty = all tags.
 - **Date format** — inline fields (`[date:: …]`), Obsidian Tasks (`📅`), or a custom regex.
-- **Record completion time** — write a `[done:: …]` marker when you complete a task, keeping the done order across reloads. Off by default.
+- **Record completion time** — on completion the `[date:: …]` field is replaced with a `[done:: …]` marker, keeping the done order across reloads. If you uncheck a task outside this view, the `[done:: …]` marker stays in the line — it is restored to `[date:: …]` when you toggle the task in the view. Off by default.
 - **Open view on startup** — open the view automatically every time Obsidian starts. Off by default.
 - **Priority** — an ordered list of notes; their groups sort to the top of the day view. Reorder with the ↑/↓ arrows (first = highest). A per-day order can be set from the day header's Priority button.
 - **Rescan** — rebuild the index with the new filters.

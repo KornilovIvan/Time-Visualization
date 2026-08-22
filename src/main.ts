@@ -409,7 +409,7 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Record completion time")
-      .setDesc("Write a [done:: ...] marker into tasks when you complete them, so the order of completion is kept across reloads. Turn off if you don't want the plugin to modify your task lines.")
+      .setDesc("On completion the [date:: ...] field is replaced with a [done:: <time>] marker (one field, no duplicates) and done tasks keep their completion order. If you return a task to open outside this view (in the editor), the [done:: ...] marker stays in the line — the plugin restores [date:: ...] only when you toggle the task here. Turn off if you don't want the plugin to modify your task lines.")
       .addToggle((tg) =>
         tg.setValue(this.plugin.settings.recordDoneTime).onChange(async (v) => {
           this.plugin.settings.recordDoneTime = v;
