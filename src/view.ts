@@ -559,9 +559,22 @@ export class TimeVisualizationView extends ItemView {
     const totalCells = Math.ceil((startOffset + daysInMonth) / 7) * 7;
     const todayKey = formatDate(new Date());
 
-    slide.createDiv({ cls: "be-month-title", text: `${MONTHS_EN[m]} ${y}` });
+    // Top row: "W" over the week column, month name over the day grid (same line)
+    const top = slide.createDiv({ cls: "be-month-top" });
+    top.createDiv({ cls: "be-month-week-label", text: "W" });
+    top.createDiv({ cls: "be-month-title", text: `${MONTHS_EN[m]} ${y}` });
 
-    const grid = slide.createDiv({ cls: "be-month-grid" });
+    const body = slide.createDiv({ cls: "be-month-body" });
+
+    // Left column with ISO week numbers, one per grid row (like regular calendars)
+    const weeks = body.createDiv({ cls: "be-month-weeks" });
+    const weekCount = totalCells / 7;
+    for (let k = 0; k < weekCount; k++) {
+      const monday = new Date(y, m, k * 7 - startOffset + 1);
+      weeks.createDiv({ cls: "be-month-week-num", text: String(isoWeekNumber(monday)) });
+    }
+
+    const grid = body.createDiv({ cls: "be-month-grid" });
 
     const frag = document.createDocumentFragment();
     for (let i = 0; i < totalCells; i++) {
@@ -1531,6 +1544,16 @@ function fileName(path: string): string {
 
 function addDays(d: Date, n: number): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+}
+
+/** ISO 8601 week number of a date (weeks start on Monday, week 1 contains the
+    first Thursday of the year) */
+function isoWeekNumber(d: Date): number {
+  const date = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = date.getUTCDay() || 7;
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  return Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
 }
 
 /** Light inline markdown renderer for task text: bold, italic, strikethrough,
