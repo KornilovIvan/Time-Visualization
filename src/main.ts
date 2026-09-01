@@ -31,6 +31,8 @@ export interface TimeVisualizationSettings {
   priorities: string[];
   /** Per-day group order overrides, keyed by date: array of note paths (first = top) */
   dayOrder: Record<string, string[]>;
+  /** When on, groups with timed tasks sort above any global-priority group */
+  timeOverPriority: boolean;
 }
 
 export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
@@ -45,6 +47,7 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   openOnStartup: false,
   priorities: [],
   dayOrder: {},
+  timeOverPriority: false,
 };
 
 class MultiSuggest extends AbstractInputSuggest<string> {
@@ -516,6 +519,17 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
     };
       renderPriorityList();
     });
+
+    new Setting(containerEl)
+      .setName("Time above global priority")
+      .setDesc("When enabled, groups that have timed tasks always sort above groups without time, no matter the global priority list.")
+      .addToggle((tg) =>
+        tg.setValue(this.plugin.settings.timeOverPriority).onChange(async (v) => {
+          this.plugin.settings.timeOverPriority = v;
+          await this.plugin.saveSettings();
+          this.plugin.getView()?.redraw();
+        })
+      );
 
     new Setting(containerEl)
       .setName("Apply")

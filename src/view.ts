@@ -684,8 +684,10 @@ export class TimeVisualizationView extends ItemView {
     return groups;
   }
 
-  /** Groups sorted by priority: the per-day order first, then the global
-      priority list, then unprioritized groups in their by-time order */
+  /** Groups sorted by priority: per-day order first, then the global priority
+      list, then unprioritized groups in their by-time order. When the
+      "time over priority" setting is on, groups with timed tasks always come
+      first regardless of the global priority list. */
   private sortedGroups(tasks: ParsedTask[], dateKey: string): Array<[string, ParsedTask[]]> {
     const groups = this.groupTasksByFile(tasks);
     const day = this.plugin.settings.dayOrder[dateKey] ?? [];
@@ -695,7 +697,17 @@ export class TimeVisualizationView extends ItemView {
     });
     const globalPos = new Map<string, number>();
     this.plugin.settings.priorities.forEach((p, i) => globalPos.set(p, i));
+    const hasTime = (path: string): boolean => {
+      const arr = groups.get(path);
+      return !!arr && arr.some((t) => !!t.time);
+    };
+    const timeFirst = this.plugin.settings.timeOverPriority;
     return Array.from(groups.entries()).sort((a, b) => {
+      if (timeFirst) {
+        const at = hasTime(a[0]);
+        const bt = hasTime(b[0]);
+        if (at !== bt) return at ? -1 : 1;
+      }
       const ad = dayPos.get(a[0]);
       const bd = dayPos.get(b[0]);
       if (ad !== undefined && bd !== undefined) return ad - bd;
