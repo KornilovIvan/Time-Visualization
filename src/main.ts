@@ -27,7 +27,8 @@ export interface TimeVisualizationSettings {
   recordDoneTime: boolean;
   /** Open the view automatically every time Obsidian starts */
   openOnStartup: boolean;
-  /** Ordered list of prioritized notes (first = highest priority); others sort last */
+  /** Ordered list of prioritized notes or folders (first = highest priority);
+      a folder covers all notes inside it; others sort last */
   priorities: string[];
   /** Per-day group order overrides, keyed by date: array of note paths (first = top) */
   dayOrder: Record<string, string[]>;
@@ -432,7 +433,7 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("Priority")
-      .setDesc("The order of the list is the priority: the first note is highest. Notes not in the list stay at the bottom of the day view. You can also reorder from the day header in the view.")
+      .setDesc("The order of the list is the priority: the first entry is highest. You can add a note or a folder — a folder applies to all notes inside it. Notes not covered by the list stay at the bottom of the day view. You can also reorder from the day header in the view.")
       .then((setting) => {
         const pContainer = setting.infoEl.createDiv({ cls: "tv-priority-list" });
     const renderPriorityList = (): void => {
@@ -490,12 +491,12 @@ class TimeVisualizationSettingTab extends PluginSettingTab {
           this.plugin.getView()?.redraw();
         });
       });
-      // Add a new note to the priority list
+      // Add a note or folder to the priority list
       addRow = pContainer.createDiv({ cls: "tv-priority-row tv-priority-add" });
       const pick = addRow.createEl("input", {
         cls: "tv-priority-pick",
         type: "text",
-        attr: { placeholder: "Note path…" },
+        attr: { placeholder: "Note or folder path…" },
       });
       const addBtn = addRow.createEl("button", { cls: "tv-priority-add-btn", text: "Add" });
       const doAdd = (): void => {

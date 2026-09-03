@@ -4,7 +4,7 @@ import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
 import { flipReorder } from "./flip";
 import type { ViewHost } from "./viewHost";
-import { sortedGroups, startEditTask } from "./taskRow";
+import { sortedGroups, startEditTask, hasGlobalPriority } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 
 export function closeTaskMenu(view: ViewHost): void {
@@ -212,7 +212,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
     row.createSpan({ cls: "be-priority-name", text: fileName(p) });
     // Gently highlight groups that are prioritized globally (in settings);
     // the "Global" label sits right after the note name
-    if (view.plugin.settings.priorities.includes(p)) {
+    if (hasGlobalPriority(view.plugin.settings.priorities, p)) {
       row.addClass("is-global");
       row.createSpan({ cls: "be-priority-tag", text: "Global" });
     }

@@ -19,6 +19,29 @@ export function groupTasksByFile(tasks: ParsedTask[]): Map<string, ParsedTask[]>
   return groups;
 }
 
+/** Whether a priority entry (note or folder) covers this note path.
+    Folders match themselves and any path under them (same rule as Sources). */
+export function priorityEntryMatches(entry: string, notePath: string): boolean {
+  if (entry.endsWith(".md")) return notePath === entry;
+  return notePath === entry || notePath.startsWith(entry + "/");
+}
+
+/** Best (lowest) global priority index for a note, or undefined if none match.
+    A folder entry applies to every note inside it. */
+export function globalPriorityIndex(priorities: string[], notePath: string): number | undefined {
+  let best: number | undefined;
+  for (let i = 0; i < priorities.length; i++) {
+    if (!priorityEntryMatches(priorities[i], notePath)) continue;
+    if (best === undefined || i < best) best = i;
+  }
+  return best;
+}
+
+/** True if any global priority entry covers this note (exact note or parent folder). */
+export function hasGlobalPriority(priorities: string[], notePath: string): boolean {
+  return globalPriorityIndex(priorities, notePath) !== undefined;
+}
+
 /** Groups sorted by priority: per-day order first, then the global priority
     list, then unprioritized groups in their by-time order. When the
     "time over priority" setting is on, groups with timed tasks always come
@@ -34,8 +57,7 @@ export function sortedGroups(
   day.forEach((p, i) => {
     if (groups.has(p)) dayPos.set(p, i);
   });
-  const globalPos = new Map<string, number>();
-  view.plugin.settings.priorities.forEach((p, i) => globalPos.set(p, i));
+  const priorities = view.plugin.settings.priorities;
   const hasTime = (path: string): boolean => {
     const arr = groups.get(path);
     return !!arr && arr.some((t) => !!t.time);
@@ -52,8 +74,8 @@ export function sortedGroups(
     if (ad !== undefined && bd !== undefined) return ad - bd;
     if (ad !== undefined) return -1;
     if (bd !== undefined) return 1;
-    const ag = globalPos.get(a[0]);
-    const bg = globalPos.get(b[0]);
+    const ag = globalPriorityIndex(priorities, a[0]);
+    const bg = globalPriorityIndex(priorities, b[0]);
     if (ag !== undefined && bg !== undefined) return ag - bg;
     if (ag !== undefined) return -1;
     if (bg !== undefined) return 1;
