@@ -2,10 +2,10 @@ import { setIcon } from "obsidian";
 import type { ParsedTask } from "./parser";
 import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
-import { flipReorder } from "./flip";
 import type { ViewHost } from "./viewHost";
 import { sortedGroups, startEditTask, hasGlobalPriority } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
+import { mountPriorityList } from "./priorityList";
 
 export function closeTaskMenu(view: ViewHost): void {
   if (view.taskMenu) {
@@ -167,67 +167,23 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   const tasks = view.index.getTasks(dateKey);
   const active = tasks.filter((t) => !t.checked);
   const order = sortedGroups(view, active, dateKey).map(([p]) => p);
+  const priorities = view.plugin.settings.priorities;
 
-  if (order.length === 0) {
-    const hint = popup.createDiv({ cls: "be-task-menu-item be-priority-hint" });
-    hint.createSpan({ text: "No open groups in this day" });
-  } else {
-    const tip = popup.createDiv({ cls: "be-priority-tip" });
-    tip.createSpan({ text: "Use the arrows to reorder priority" });
-  }
-
-  // Reorder with the up/down arrows only (no drag & drop)
-  let rows: HTMLElement[] = [];
-  const renumber = (): void => {
-    rows.forEach((r, j) => {
-      r.dataset.index = String(j);
-      const num = r.querySelector(".be-priority-num");
-      if (num) num.setText(String(j + 1));
-    });
-  };
-  const commitOrder = (): void => {
-    const nextOrder = rows.map((r) => r.dataset.path ?? "").filter(Boolean);
-    view.plugin.settings.dayOrder[dateKey] = nextOrder;
-    void view.plugin.saveSettings();
-    view.refillCurrent();
-  };
-  // Move a row by one position via the up/down arrows (FLIP glide)
-  const moveOne = (row: HTMLElement, dir: 1 | -1): void => {
-    const from = rows.indexOf(row);
-    const to = from + dir;
-    if (from < 0 || to < 0 || to >= rows.length) return;
-    const prev = rows.map((r) => r.getBoundingClientRect().top);
-    popup.insertBefore(row, dir === 1 ? (rows[to + 1] ?? null) : rows[to]);
-    rows = Array.from(popup.querySelectorAll<HTMLElement>(".be-priority-row"));
-    flipReorder(rows, prev);
-    renumber();
-    commitOrder();
-  };
-  order.forEach((p, i) => {
-    const row = popup.createDiv({ cls: "be-task-menu-item be-priority-row" });
-    rows.push(row);
-    row.dataset.index = String(i);
-    row.dataset.path = p;
-    row.createSpan({ cls: "be-priority-num", text: String(i + 1) });
-    row.createSpan({ cls: "be-priority-name", text: fileName(p) });
-    // Gently highlight groups that are prioritized globally (in settings);
-    // the "Global" label sits right after the note name
-    if (hasGlobalPriority(view.plugin.settings.priorities, p)) {
-      row.addClass("is-global");
-      row.createSpan({ cls: "be-priority-tag", text: "Global" });
-    }
-    const upBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move up" } });
-    setIcon(upBtn, "chevron-up");
-    upBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      moveOne(row, -1);
-    });
-    const downBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move down" } });
-    setIcon(downBtn, "chevron-down");
-    downBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      moveOne(row, 1);
-    });
+  mountPriorityList(popup, {
+    items: order.map((p) => ({
+      path: p,
+      label: fileName(p),
+      isGlobal: hasGlobalPriority(priorities, p),
+    })),
+    rowClass: "be-task-menu-item",
+    tipText: order.length > 0 ? "Use the arrows to reorder priority" : undefined,
+    emptyText: order.length === 0 ? "No open groups in this day" : undefined,
+    setIndexAttr: true,
+    onOrderChange: (paths) => {
+      view.plugin.settings.dayOrder[dateKey] = paths;
+      void view.plugin.saveSettings();
+      view.refillCurrent();
+    },
   });
 
   document.body.appendChild(popup);

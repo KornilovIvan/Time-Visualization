@@ -1,5 +1,5 @@
-import { AbstractInputSuggest, App, setIcon } from "obsidian";
-import { flipReorder } from "./flip";
+import { AbstractInputSuggest, App } from "obsidian";
+import { mountPriorityList } from "./priorityList";
 
 export class MultiSuggest extends AbstractInputSuggest<string> {
   private items: string[];
@@ -139,59 +139,28 @@ export function buildPriorityList(
 ): void {
   const render = (): void => {
     containerEl.empty();
-    containerEl.createDiv({ cls: "be-priority-tip", text: "Use the arrows to reorder priority." });
+    // Add row is created first so reorder rows can insert before it
+    const addRow = containerEl.createDiv({ cls: "tv-priority-row tv-priority-add" });
     const list = options.getList();
-    let rows: HTMLElement[] = [];
-    // The "add note" field must always stay below the list rows
-    let addRow: HTMLElement | null = null;
-    const renumber = (): void => {
-      rows.forEach((r, j) => {
-        const num = r.querySelector(".be-priority-num");
-        if (num) num.setText(String(j + 1));
-      });
-    };
-    const persist = (): void => {
-      options.setList(rows.map((r) => r.dataset.path ?? "").filter(Boolean));
-      options.onChange();
-    };
-    const moveOne = (row: HTMLElement, dir: 1 | -1): void => {
-      const from = rows.indexOf(row);
-      const to = from + dir;
-      if (from < 0 || to < 0 || to >= rows.length) return;
-      const prev = rows.map((r) => r.getBoundingClientRect().top);
-      containerEl.insertBefore(row, dir === 1 ? (rows[to + 1] ?? addRow) : rows[to]);
-      rows = Array.from(containerEl.querySelectorAll<HTMLElement>(".be-priority-row"));
-      flipReorder(rows, prev);
-      renumber();
-      persist();
-    };
-    list.forEach((path, i) => {
-      const row = containerEl.createDiv({ cls: "tv-priority-row be-priority-row" });
-      rows.push(row);
-      row.dataset.path = path;
-      row.createSpan({ cls: "be-priority-num", text: String(i + 1) });
-      row.createSpan({ cls: "be-priority-name", text: path });
-      const upBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move up" } });
-      setIcon(upBtn, "chevron-up");
-      upBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        moveOne(row, -1);
-      });
-      const downBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move down" } });
-      setIcon(downBtn, "chevron-down");
-      downBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        moveOne(row, 1);
-      });
-      const del = row.createEl("button", { cls: "tv-priority-del", text: "×" });
-      del.addEventListener("click", () => {
-        options.setList(list.filter((_, j) => j !== i));
+
+    mountPriorityList(containerEl, {
+      items: list.map((path) => ({ path, label: path })),
+      rowClass: "tv-priority-row",
+      tipText: "Use the arrows to reorder priority.",
+      insertBefore: addRow,
+      trailingEl: addRow,
+      showDelete: true,
+      onOrderChange: (paths) => {
+        options.setList(paths);
+        options.onChange();
+      },
+      onDelete: (_path, index) => {
+        options.setList(list.filter((_, j) => j !== index));
         options.onChange();
         render();
-      });
+      },
     });
-    // Add a note or folder to the priority list
-    addRow = containerEl.createDiv({ cls: "tv-priority-row tv-priority-add" });
+
     const pick = addRow.createEl("input", {
       cls: "tv-priority-pick",
       type: "text",
