@@ -1,0 +1,39 @@
+/* === utilities.css: Hidden / no-grow / scrollbar utilities === */
+
+.tv-day-list.tv-hidden {
+  display: none;
+}
+
+.tv-day-slide.tv-no-grow,
+.tv-week-slide.tv-no-grow,
+.tv-month-slide.tv-no-grow {
+  flex: none;
+}
+
+.tv-task-clone {
+  position: absolute;
+  pointer-events: none;
+}
+
+.tv-task.is-editing .tv-task-text {
+  display: none;
+}
+
+/* When the active-task list is hidden, Done sits flush against the header so
+   the bar above Done lands exactly on the header's line before fading out */
+.tv-day-done-section.tv-done-top {
+  margin-top: 0;
+}
+
+/* Hide scrollbars on every scrollable container in the plugin (day card, week
+   columns, month cells, lists) — no side bar appears while scrolling */
+.tv-root,
+.tv-root * {
+  scrollbar-width: none;
+}
+.tv-root::-webkit-scrollbar,
+.tv-root *::-webkit-scrollbar {
+  display: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}

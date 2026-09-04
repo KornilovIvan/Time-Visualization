@@ -21,10 +21,10 @@ export interface CarouselMeta {
 export function getCarouselMeta(view: ViewHost, level: Level): CarouselMeta {
   if (level === "day") {
     return {
-      paneCls: "be-day",
-      focusCls: "be-day-focus",
-      trackCls: "be-day-track",
-      slideCls: "be-day-slide",
+      paneCls: "tv-day",
+      focusCls: "tv-day-focus",
+      trackCls: "tv-day-track",
+      slideCls: "tv-day-slide",
       axis: "x",
       slideRatio: 0.93,
       duration: 240,
@@ -36,10 +36,10 @@ export function getCarouselMeta(view: ViewHost, level: Level): CarouselMeta {
   }
   if (level === "week") {
     return {
-      paneCls: "be-week",
-      focusCls: "be-week-focus",
-      trackCls: "be-week-track",
-      slideCls: "be-week-slide",
+      paneCls: "tv-week",
+      focusCls: "tv-week-focus",
+      trackCls: "tv-week-track",
+      slideCls: "tv-week-slide",
       axis: "y",
       slideRatio: 0.9,
       duration: 380,
@@ -50,10 +50,10 @@ export function getCarouselMeta(view: ViewHost, level: Level): CarouselMeta {
     };
   }
   return {
-    paneCls: "be-month",
-    focusCls: "be-month-focus",
-    trackCls: "be-month-track",
-    slideCls: "be-month-slide",
+    paneCls: "tv-month",
+    focusCls: "tv-month-focus",
+    trackCls: "tv-month-track",
+    slideCls: "tv-month-slide",
     axis: "y",
     slideRatio: 1,
     duration: 380,
@@ -126,7 +126,7 @@ export function resetTrack(view: ViewHost, track: HTMLElement, meta: CarouselMet
   if (!focusSize) return;
   const slideSize = meta.slideRatio * focusSize;
   for (const slide of Array.from(track.children) as HTMLElement[]) {
-    slide.classList.add("be-no-grow");
+    slide.classList.add("tv-no-grow");
     if (meta.axis === "x") slide.style.width = `${slideSize}px`;
     else slide.style.height = `${slideSize}px`;
   }
@@ -163,7 +163,7 @@ export function carouselStep(view: ViewHost, dir: 1 | -1, meta: CarouselMeta): v
 
   const slideSize = meta.slideRatio * focusSize;
   for (const slide of Array.from(track.children) as HTMLElement[]) {
-    slide.classList.add("be-no-grow");
+    slide.classList.add("tv-no-grow");
     if (meta.axis === "x") slide.style.width = `${slideSize}px`;
     else slide.style.height = `${slideSize}px`;
   }

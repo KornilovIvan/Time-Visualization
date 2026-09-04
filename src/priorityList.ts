@@ -9,7 +9,7 @@ export interface PriorityListItem {
 
 export interface MountPriorityListOptions {
   items: PriorityListItem[];
-  /** Extra classes on each row (always also gets be-priority-row) */
+  /** Extra classes on each row (always also gets tv-priority-row) */
   rowClass?: string;
   tipText?: string;
   emptyText?: string;
@@ -44,18 +44,18 @@ export function mountPriorityList(
 
   if (items.length === 0) {
     if (emptyText) {
-      const hint = container.createDiv({ cls: "be-task-menu-item be-priority-hint" });
+      const hint = container.createDiv({ cls: "tv-task-menu-item tv-priority-hint" });
       if (insertBefore) container.insertBefore(hint, insertBefore);
       hint.createSpan({ text: emptyText });
     } else if (tipText) {
-      const tip = container.createDiv({ cls: "be-priority-tip", text: tipText });
+      const tip = container.createDiv({ cls: "tv-priority-tip", text: tipText });
       if (insertBefore) container.insertBefore(tip, insertBefore);
     }
     return;
   }
 
   if (tipText) {
-    const tip = container.createDiv({ cls: "be-priority-tip", text: tipText });
+    const tip = container.createDiv({ cls: "tv-priority-tip", text: tipText });
     if (insertBefore) container.insertBefore(tip, insertBefore);
   }
 
@@ -63,7 +63,7 @@ export function mountPriorityList(
   const renumber = (): void => {
     rows.forEach((r, j) => {
       if (setIndexAttr) r.dataset.index = String(j);
-      const num = r.querySelector(".be-priority-num");
+      const num = r.querySelector(".tv-priority-num");
       if (num) num.setText(String(j + 1));
     });
   };
@@ -76,32 +76,32 @@ export function mountPriorityList(
     if (from < 0 || to < 0 || to >= rows.length) return;
     const prev = rows.map((r) => r.getBoundingClientRect().top);
     container.insertBefore(row, dir === 1 ? (rows[to + 1] ?? trailingEl) : rows[to]);
-    rows = Array.from(container.querySelectorAll<HTMLElement>(".be-priority-row"));
+    rows = Array.from(container.querySelectorAll<HTMLElement>(".tv-priority-row"));
     flipReorder(rows, prev);
     renumber();
     commit();
   };
 
   items.forEach((item, i) => {
-    const cls = [rowClass, "be-priority-row"].filter(Boolean).join(" ");
+    const cls = [...new Set([rowClass, "tv-priority-row"].filter(Boolean))].join(" ");
     const row = container.createDiv({ cls });
     if (insertBefore) container.insertBefore(row, insertBefore);
     rows.push(row);
     if (setIndexAttr) row.dataset.index = String(i);
     row.dataset.path = item.path;
-    row.createSpan({ cls: "be-priority-num", text: String(i + 1) });
-    row.createSpan({ cls: "be-priority-name", text: item.label });
+    row.createSpan({ cls: "tv-priority-num", text: String(i + 1) });
+    row.createSpan({ cls: "tv-priority-name", text: item.label });
     if (item.isGlobal) {
       row.addClass("is-global");
-      row.createSpan({ cls: "be-priority-tag", text: "Global" });
+      row.createSpan({ cls: "tv-priority-tag", text: "Global" });
     }
-    const upBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move up" } });
+    const upBtn = row.createEl("button", { cls: "tv-priority-arrow", attr: { "aria-label": "Move up" } });
     setIcon(upBtn, "chevron-up");
     upBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       moveOne(row, -1);
     });
-    const downBtn = row.createEl("button", { cls: "be-priority-arrow", attr: { "aria-label": "Move down" } });
+    const downBtn = row.createEl("button", { cls: "tv-priority-arrow", attr: { "aria-label": "Move down" } });
     setIcon(downBtn, "chevron-down");
     downBtn.addEventListener("click", (e) => {
       e.stopPropagation();

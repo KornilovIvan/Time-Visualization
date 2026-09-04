@@ -242,11 +242,11 @@ export class TimeVisualizationView extends ItemView {
   }
 
   private buildUI(): void {
-    this.root = this.contentEl.createDiv({ cls: "be-root" });
+    this.root = this.contentEl.createDiv({ cls: "tv-root" });
     this.root.tabIndex = -1;
-    this.headerEl = this.root.createDiv({ cls: "be-header" });
+    this.headerEl = this.root.createDiv({ cls: "tv-header" });
     this.buildHeader(this.headerEl);
-    this.stageEl = this.root.createDiv({ cls: "be-stage" });
+    this.stageEl = this.root.createDiv({ cls: "tv-stage" });
     this.render();
   }
 
@@ -257,7 +257,7 @@ export class TimeVisualizationView extends ItemView {
     this.mouseDownY = e.clientY;
     // Only inside our view: remember whether text was selected, then clear it —
     // the click that clears the selection must not also toggle a task
-    if ((e.target as HTMLElement).closest(".be-root")) {
+    if ((e.target as HTMLElement).closest(".tv-root")) {
       const sel = window.getSelection();
       this.hadSelection = !!sel && !sel.isCollapsed;
       if (sel) sel.removeAllRanges();
@@ -295,7 +295,7 @@ export class TimeVisualizationView extends ItemView {
       this.hadSelection = false;
       return;
     }
-    const taskEl = (e.target as HTMLElement).closest(".be-task") as HTMLElement | null;
+    const taskEl = (e.target as HTMLElement).closest(".tv-task") as HTMLElement | null;
     if (!taskEl) return;
     if (taskEl.classList.contains("is-editing")) return;
     const key = taskEl.dataset.taskKey;
@@ -313,7 +313,7 @@ export class TimeVisualizationView extends ItemView {
     }
     e.stopPropagation();
     e.preventDefault();
-    const box = taskEl.querySelector(".be-task-box") as HTMLElement | null;
+    const box = taskEl.querySelector(".tv-task-box") as HTMLElement | null;
     applyTaskToggled(this, taskEl, box, t);
     // The file write runs in parallel; the modify event must not re-render mid-animation
     this.suppressRerender(3000);
@@ -338,12 +338,12 @@ export class TimeVisualizationView extends ItemView {
     this.taskRefs.clear();
 
     // Update the active level button without recreating the header
-    this.headerEl?.querySelectorAll<HTMLElement>(".be-level").forEach((b) => {
+    this.headerEl?.querySelectorAll<HTMLElement>(".tv-level").forEach((b) => {
       b.classList.toggle("is-active", b.dataset.level === this.level);
     });
 
     this.stageEl.empty();
-    const body = this.stageEl.createDiv({ cls: "be-body" });
+    const body = this.stageEl.createDiv({ cls: "tv-body" });
     renderCarousel(this, body, getCarouselMeta(this, this.level));
 
     body.animate(
@@ -353,21 +353,21 @@ export class TimeVisualizationView extends ItemView {
   }
 
   private buildHeader(header: HTMLElement): void {
-    const controls = header.createDiv({ cls: "be-controls" });
+    const controls = header.createDiv({ cls: "tv-controls" });
 
-    const nav = controls.createDiv({ cls: "be-nav" });
-    const btnPrev = nav.createEl("button", { cls: "be-btn", attr: { "aria-label": "Previous" } });
+    const nav = controls.createDiv({ cls: "tv-nav" });
+    const btnPrev = nav.createEl("button", { cls: "tv-btn", attr: { "aria-label": "Previous" } });
     setIcon(btnPrev, "chevron-left");
     btnPrev.addEventListener("click", () => this.navigate(-1));
 
-    const btnToday = nav.createEl("button", { cls: "be-btn be-today", text: "Today" });
+    const btnToday = nav.createEl("button", { cls: "tv-btn tv-today", text: "Today" });
     btnToday.addEventListener("click", () => this.goToday());
 
-    const btnNext = nav.createEl("button", { cls: "be-btn", attr: { "aria-label": "Next" } });
+    const btnNext = nav.createEl("button", { cls: "tv-btn", attr: { "aria-label": "Next" } });
     setIcon(btnNext, "chevron-right");
     btnNext.addEventListener("click", () => this.navigate(1));
 
-    const levels = controls.createDiv({ cls: "be-levels" });
+    const levels = controls.createDiv({ cls: "tv-levels" });
     const defs: Array<[Level, string]> = [
       ["day", "Day"],
       ["week", "Week"],
@@ -375,7 +375,7 @@ export class TimeVisualizationView extends ItemView {
     ];
     for (const [lv, label] of defs) {
       const b = levels.createEl("button", {
-        cls: "be-level" + (this.level === lv ? " is-active" : ""),
+        cls: "tv-level" + (this.level === lv ? " is-active" : ""),
         text: label,
         attr: { "data-level": lv },
       });
@@ -383,7 +383,7 @@ export class TimeVisualizationView extends ItemView {
     }
 
     const settingsBtn = controls.createEl("button", {
-      cls: "be-btn be-settings",
+      cls: "tv-btn tv-settings",
       attr: { "aria-label": "Settings" },
     });
     setIcon(settingsBtn, "settings");

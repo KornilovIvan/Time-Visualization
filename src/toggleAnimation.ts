@@ -10,8 +10,8 @@ export function fadeIn(el: HTMLElement, duration: number): void {
 }
 
 export function ensureDoneVisible(slide: HTMLElement): void {
-  const section = slide.querySelector(".be-day-done-section") as HTMLElement | null;
-  const title = slide.querySelector(".be-day-done-title") as HTMLElement | null;
+  const section = slide.querySelector(".tv-day-done-section") as HTMLElement | null;
+  const title = slide.querySelector(".tv-day-done-title") as HTMLElement | null;
   if (!section || !title) return;
   const wasHidden = section.classList.contains("is-empty");
   section.removeClass("is-empty");
@@ -21,28 +21,28 @@ export function ensureDoneVisible(slide: HTMLElement): void {
 }
 
 export function syncActiveSection(slide: HTMLElement): void {
-  const list = slide.querySelector(".be-day-list") as HTMLElement | null;
+  const list = slide.querySelector(".tv-day-list") as HTMLElement | null;
   if (!list) return;
-  const doneSection = slide.querySelector(".be-day-done-section") as HTMLElement | null;
-  const hasGroups = list.querySelector(".be-day-group") !== null;
-  const title = list.querySelector(".be-day-active-title") as HTMLElement | null;
+  const doneSection = slide.querySelector(".tv-day-done-section") as HTMLElement | null;
+  const hasGroups = list.querySelector(".tv-day-group") !== null;
+  const title = list.querySelector(".tv-day-active-title") as HTMLElement | null;
   if (hasGroups) {
-    list.classList.remove("be-hidden");
-    if (doneSection) doneSection.classList.remove("be-done-top");
-    if (doneSection && !doneSection.querySelector(".be-day-done-bar")) {
-      const bar = doneSection.createDiv({ cls: "be-day-done-bar" });
+    list.classList.remove("tv-hidden");
+    if (doneSection) doneSection.classList.remove("tv-done-top");
+    if (doneSection && !doneSection.querySelector(".tv-day-done-bar")) {
+      const bar = doneSection.createDiv({ cls: "tv-day-done-bar" });
       doneSection.insertBefore(bar, doneSection.firstChild);
     }
     if (!title) {
-      const t = list.createDiv({ cls: "be-day-active-title", text: "Open tasks" });
+      const t = list.createDiv({ cls: "tv-day-active-title", text: "Open tasks" });
       list.insertBefore(t, list.firstChild);
     }
   } else {
     // Hide the list so Done moves up flush against the header: the bar above
     // Done then lands exactly on the header's line and fades out (no double
     // line, no leftover gap)
-    list.classList.add("be-hidden");
-    if (doneSection) doneSection.classList.add("be-done-top");
+    list.classList.add("tv-hidden");
+    if (doneSection) doneSection.classList.add("tv-done-top");
     if (title) title.remove();
   }
 }
@@ -53,7 +53,7 @@ export function flipMove(slide: HTMLElement, mutate: () => void): void {
     slide.querySelectorAll<HTMLElement>(
       // Exclude the flying clone — it has its own animation and must not be
       // pulled by the layout shift
-      ".be-task:not(.be-task-clone), .be-day-group-title, .be-day-active-title, .be-day-done-title, .be-day-done-bar"
+      ".tv-task:not(.tv-task-clone), .tv-day-group-title, .tv-day-active-title, .tv-day-done-title, .tv-day-done-bar"
     )
   );
   const before = new Map<HTMLElement, number>();
@@ -68,8 +68,8 @@ export function flipMove(slide: HTMLElement, mutate: () => void): void {
 
   // The active-task list is hidden — Done takes its place: the divider bar
   // travels with Done and fades out at the end of the FLIP
-  const list = slide.querySelector(".be-day-list") as HTMLElement | null;
-  const listHidden = !!list && list.classList.contains("be-hidden");
+  const list = slide.querySelector(".tv-day-list") as HTMLElement | null;
+  const listHidden = !!list && list.classList.contains("tv-hidden");
 
   for (const el of els) {
     if (!el.isConnected) continue;
@@ -77,7 +77,7 @@ export function flipMove(slide: HTMLElement, mutate: () => void): void {
     if (beforeTop === undefined) continue; // was hidden — appears on its own (fade)
     const after = el.getBoundingClientRect().top;
     const dy = beforeTop - after;
-    const isBar = el.classList.contains("be-day-done-bar");
+    const isBar = el.classList.contains("tv-day-done-bar");
     if (dy === 0 && !(listHidden && isBar)) continue;
     // Constant speed: duration proportional to distance
     const duration = Math.min(1500, Math.max(220, Math.abs(dy) / 0.35));
@@ -109,21 +109,21 @@ export function applyTaskToggled(
   t.checked = !t.checked;
   row.classList.toggle("is-done", t.checked);
   if (box) box.classList.toggle("is-checked", t.checked);
-  const slide = row.closest(".be-day-slide, .be-day-card") as HTMLElement | null;
+  const slide = row.closest(".tv-day-slide, .tv-day-card") as HTMLElement | null;
 
   const mutate = (): void => {
     const esc = t.filePath.replace(/"/g, '\\"');
     const timed = !!t.time;
     const timedSel = `[data-timed="${timed ? "1" : "0"}"]`;
     if (slide && t.checked) {
-      const activeGroup = row.closest(".be-day-group") as HTMLElement | null;
-      const doneList = slide.querySelector(".be-day-done-list") as HTMLElement | null;
+      const activeGroup = row.closest(".tv-day-group") as HTMLElement | null;
+      const doneList = slide.querySelector(".tv-day-done-list") as HTMLElement | null;
       if (doneList) {
         // Done section stays grouped by note only (no timed split)
-        let doneGroup = doneList.querySelector<HTMLElement>(".be-day-group[data-file=\"" + esc + "\"]");
+        let doneGroup = doneList.querySelector<HTMLElement>(".tv-day-group[data-file=\"" + esc + "\"]");
         const isLastInGroup =
           !!activeGroup &&
-          activeGroup.querySelector(".be-day-group-tasks")?.childElementCount === 1;
+          activeGroup.querySelector(".tv-day-group-tasks")?.childElementCount === 1;
 
         if (!doneGroup && activeGroup && isLastInGroup) {
           // The whole group (header + task) moves to Done as one block
@@ -133,19 +133,19 @@ export function applyTaskToggled(
         } else {
           if (!doneGroup) {
             doneGroup = createTaskGroup(view, doneList, t.filePath, slide?.dataset.key);
-            const createdTitle = doneGroup.querySelector(".be-day-group-title") as HTMLElement | null;
+            const createdTitle = doneGroup.querySelector(".tv-day-group-title") as HTMLElement | null;
             if (createdTitle) {
               fadeIn(createdTitle, 260);
             }
           }
-          const dTasksEl = doneGroup.querySelector(".be-day-group-tasks") as HTMLElement | null;
+          const dTasksEl = doneGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
           if (activeGroup && isLastInGroup) {
             // Last task of the group: merging the header separately and then
             // lifting the list in a second FLIP caused a visible double step
             // (the group rose part-way, paused, then jumped). Move the whole
             // group into Done and remove the empty active group inside this
             // single FLIP, so the list lifts once, smoothly.
-            const aTasksEl = activeGroup.querySelector(".be-day-group-tasks") as HTMLElement | null;
+            const aTasksEl = activeGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
             if (aTasksEl) {
               for (const child of Array.from(aTasksEl.children)) dTasksEl?.appendChild(child);
             }
@@ -161,23 +161,23 @@ export function applyTaskToggled(
       syncActiveSection(slide);
     } else if (slide && !t.checked) {
       // Return to active: into the matching timed/untimed subgroup for this note
-      const doneGroup = row.closest(".be-day-group") as HTMLElement | null;
+      const doneGroup = row.closest(".tv-day-group") as HTMLElement | null;
       const doneGroupTop = doneGroup ? doneGroup.getBoundingClientRect().top : 0;
-      const activeList = slide.querySelector(".be-day-list") as HTMLElement | null;
+      const activeList = slide.querySelector(".tv-day-list") as HTMLElement | null;
       if (activeList) {
         // Prefer the matching timed/untimed bucket; else a merged group (no data-timed)
         let group =
           activeList.querySelector<HTMLElement>(
-            ".be-day-group[data-file=\"" + esc + "\"]" + timedSel
+            ".tv-day-group[data-file=\"" + esc + "\"]" + timedSel
           ) ??
           activeList.querySelector<HTMLElement>(
-            ".be-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
+            ".tv-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
           );
         let createdGroup = false;
         if (!group) {
           group = createTaskGroup(view, activeList, t.filePath, slide?.dataset.key, timed);
           // Insert among siblings: by note path, timed subgroup before untimed
-          const groups = Array.from(activeList.querySelectorAll<HTMLElement>(".be-day-group"));
+          const groups = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
           let before: HTMLElement | null = null;
           for (const g of groups) {
             if (g === group) continue;
@@ -195,7 +195,7 @@ export function applyTaskToggled(
           activeList.insertBefore(group, before);
           createdGroup = true;
         }
-        const tasksEl = group.querySelector(".be-day-group-tasks") as HTMLElement | null;
+        const tasksEl = group.querySelector(".tv-day-group-tasks") as HTMLElement | null;
         if (tasksEl) {
           let insertBefore: HTMLElement | null = null;
           for (const child of Array.from(tasksEl.children) as HTMLElement[]) {
@@ -210,17 +210,17 @@ export function applyTaskToggled(
         // Remove the note's Done group if it became empty (first, so the layout
         // stabilizes and the header "arrival" is precise)
         if (doneGroup) {
-          const dgTasks = doneGroup.querySelector(".be-day-group-tasks");
+          const dgTasks = doneGroup.querySelector(".tv-day-group-tasks");
           if (dgTasks && dgTasks.childElementCount === 0) doneGroup.remove();
         }
-        const doneSection = slide.querySelector(".be-day-done-section") as HTMLElement | null;
-        const doneList = slide.querySelector(".be-day-done-list") as HTMLElement | null;
+        const doneSection = slide.querySelector(".tv-day-done-section") as HTMLElement | null;
+        const doneList = slide.querySelector(".tv-day-done-list") as HTMLElement | null;
         if (doneSection && doneList && doneList.childElementCount === 0) {
           doneSection.addClass("is-empty");
         }
         // The new group's header "flies in" from the Done group's position
         if (createdGroup) {
-          const title = group.querySelector(".be-day-group-title") as HTMLElement | null;
+          const title = group.querySelector(".tv-day-group-title") as HTMLElement | null;
           const to = group.getBoundingClientRect().top;
           const from = doneGroupTop || to + 40;
           const dy = to - from;

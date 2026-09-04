@@ -1,0 +1,108 @@
+/* === settings.css: Settings tab: multi-select, priority editor === */
+
+.tv-setting-control {
+  margin-top: 6px;
+  width: 100%;
+}
+
+/* Global priority editor in the settings tab */
+.tv-priority-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0 0 12px;
+}
+.tv-priority-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.tv-priority-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+.tv-priority-list > .tv-priority-tip {
+  font-size: 0.8em;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+  padding: 0;
+  border-bottom: none;
+}
+.tv-priority-del {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 1.1em;
+  line-height: 1;
+}
+.tv-priority-del:hover {
+  color: var(--text-error, var(--text-normal));
+}
+.tv-priority-row.is-dragging {
+  opacity: 0.5;
+}
+.tv-priority-row.is-over {
+  outline: 1px dashed var(--interactive-accent);
+  outline-offset: -1px;
+}
+.tv-priority-add .tv-priority-pick {
+  flex: 1;
+  min-width: 0;
+}
+.tv-priority-add-btn {
+  flex: none;
+}
+
+.tv-multi {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.tv-multi-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.tv-multi-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--background-modifier-border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.85em;
+  color: var(--text-normal);
+}
+
+.tv-multi-chip-x {
+  cursor: pointer;
+  color: var(--text-muted);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.tv-multi-chip-x:hover {
+  color: var(--text-normal);
+}
+
+.tv-multi-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.tv-suggest-highlight {
+  color: var(--interactive-accent);
+  font-weight: 700;
+}

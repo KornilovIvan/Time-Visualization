@@ -1,3 +1,10 @@
+/*
+ * GENERATED FILE — edit sources in styles/*.css, then run: node styles-build.mjs
+ * (also run automatically from npm run build / npm run dev)
+ */
+
+/* === settings.css: Settings tab: multi-select, priority editor === */
+
 .tv-setting-control {
   margin-top: 6px;
   width: 100%;
@@ -23,10 +30,12 @@
   white-space: nowrap;
   font-size: 0.9em;
 }
-.tv-priority-tip {
+.tv-priority-list > .tv-priority-tip {
   font-size: 0.8em;
   color: var(--text-muted);
   margin-bottom: 4px;
+  padding: 0;
+  border-bottom: none;
 }
 .tv-priority-del {
   flex: none;
@@ -103,7 +112,9 @@
   font-weight: 700;
 }
 
-.be-root {
+/* === layout.css: View shell: root, header, controls, stage === */
+
+.tv-root {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -116,7 +127,7 @@
   user-select: text;
 }
 
-.be-header {
+.tv-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -124,19 +135,19 @@
   flex-wrap: wrap;
 }
 
-.be-controls {
+.tv-controls {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.be-nav {
+.tv-nav {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
-.be-btn {
+.tv-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -150,24 +161,24 @@
   transition: background 120ms ease, transform 120ms ease;
 }
 
-.be-btn:hover {
+.tv-btn:hover {
   background: var(--background-modifier-border-hover);
 }
 
-.be-btn:active {
+.tv-btn:active {
   transform: scale(0.95);
 }
 
-.be-today {
+.tv-today {
   background: var(--interactive-accent);
   color: var(--text-on-accent);
 }
 
-.be-today:hover {
+.tv-today:hover {
   background: var(--interactive-accent-hover);
 }
 
-.be-levels {
+.tv-levels {
   display: flex;
   gap: 4px;
   padding: 3px;
@@ -175,7 +186,7 @@
   border-radius: 8px;
 }
 
-.be-level {
+.tv-level {
   padding: 4px 12px;
   border-radius: 6px;
   border: none;
@@ -186,42 +197,44 @@
   transition: background 150ms ease, color 150ms ease;
 }
 
-.be-level:hover {
+.tv-level:hover {
   color: var(--text-normal);
 }
 
-.be-level.is-active {
+.tv-level.is-active {
   background: var(--background-primary);
   color: var(--text-normal);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
-.be-body {
+.tv-body {
   flex: 1;
   min-height: 0;
   overflow: auto;
 }
 
-.be-stage {
+.tv-stage {
   flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.be-week {
+/* === week.css: Week carousel and week-level day cards === */
+
+.tv-week {
   display: flex;
   height: 100%;
   min-height: 320px;
 }
 
-.be-week-focus {
+.tv-week-focus {
   position: relative;
   flex: 1;
   overflow: hidden;
 }
 
-.be-week-track {
+.tv-week-track {
   position: absolute;
   top: 0;
   left: 0;
@@ -232,7 +245,7 @@
   will-change: transform;
 }
 
-.be-week-slide {
+.tv-week-slide {
   flex: 0 0 90%;
   min-height: 0;
   width: 100%;
@@ -247,103 +260,103 @@
   transition: opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
 }
 
-.be-week-track .be-week-slide:nth-child(2) {
+.tv-week-track .tv-week-slide:nth-child(2) {
   z-index: 2;
   border-color: var(--background-modifier-border-hover);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05), 0 10px 16px rgba(0, 0, 0, 0.09);
 }
 
-.be-week-track .be-week-slide:nth-child(1) {
+.tv-week-track .tv-week-slide:nth-child(1) {
   opacity: 0.45;
   transform: scale(0.96) translateY(-8px);
   z-index: 1;
 }
-.be-week-track .be-week-slide:nth-child(3) {
+.tv-week-track .tv-week-slide:nth-child(3) {
   opacity: 0.45;
   transform: scale(0.96) translateY(8px);
   z-index: 1;
 }
 
-.be-week .be-task-tags {
+.tv-week .tv-task-tags {
   display: none;
 }
 
-.be-week .be-day-card {
+.tv-week .tv-day-card {
   border: none;
   border-radius: 0;
   background: transparent;
   border-right: 1px solid var(--background-modifier-border);
   overflow-y: auto;
 }
-.be-week .be-day-card::-webkit-scrollbar {
+.tv-week .tv-day-card::-webkit-scrollbar {
   display: none;
 }
-.be-week .be-day-card:last-child {
+.tv-week .tv-day-card:last-child {
   border-right: none;
 }
 
-.be-week .be-day-card:hover {
+.tv-week .tv-day-card:hover {
   transform: none;
   box-shadow: none;
   background: transparent;
   border-color: var(--background-modifier-border);
 }
 
-.be-week .be-task {
+.tv-week .tv-task {
   padding-left: 2px;
 }
-.be-week .be-task-box {
+.tv-week .tv-task-box {
   padding: 1px 0 0 0;
   margin-left: -1px;
 }
-.be-week .be-check-svg {
+.tv-week .tv-check-svg {
   width: 1.1em;
   height: 1.1em;
 }
 
-.be-week .be-day-group-title {
+.tv-week .tv-day-group-title {
   font-size: 0.84em;
   padding-left: 0;
 }
 
-.be-week .be-day-active-title,
-.be-week .be-day-done-title {
+.tv-week .tv-day-active-title,
+.tv-week .tv-day-done-title {
   font-size: 1.1em;
   padding: 1px 0 2px;
 }
-.be-week .be-day-active-title {
+.tv-week .tv-day-active-title {
   padding-left: 0;
 }
-.be-week .be-day-done-title {
+.tv-week .tv-day-done-title {
   padding-left: 0;
 }
-.be-week .be-day-list {
+.tv-week .tv-day-list {
   flex: none;
   overflow: visible;
   padding: 4px 6px;
 }
-.be-week .be-day-group {
+.tv-week .tv-day-group {
   margin-bottom: 6px;
 }
-.be-week .be-day-done-section {
+.tv-week .tv-day-done-section {
   margin-top: 4px;
   padding: 0 6px;
 }
-.be-week .be-day-done-bar {
+.tv-week .tv-day-done-bar {
   position: static;
   height: 1px;
   background: var(--background-modifier-border);
   margin: 0 -6px 4px;
 }
-.be-week .be-day-done-list {
+.tv-week .tv-day-done-list {
   gap: 1px;
   padding: 1px 0 4px;
 }
-.be-week .be-day-group-tasks {
+.tv-week .tv-day-group-tasks {
   padding: 1px 4px;
 }
 
-.be-day-card {
+.tv-day-card {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--background-modifier-border);
@@ -355,17 +368,17 @@
   min-width: 0;
 }
 
-.be-day-card:hover {
+.tv-day-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   border-color: var(--interactive-accent);
 }
 
-.be-day-card.is-today {
+.tv-day-card.is-today {
   border-color: var(--interactive-accent);
 }
 
-.be-day-head {
+.tv-day-head {
   position: relative;
   display: flex;
   align-items: baseline;
@@ -374,19 +387,19 @@
   border-bottom: 1px solid var(--background-modifier-border);
 }
 
-.be-day-weekday {
+.tv-day-weekday {
   font-size: 0.78em;
   text-transform: uppercase;
   color: var(--text-muted);
   letter-spacing: 0.04em;
 }
 
-.be-day-num {
+.tv-day-num {
   font-size: 1.15em;
   font-weight: 600;
 }
 
-.be-week .be-day-head {
+.tv-week .tv-day-head {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -394,18 +407,18 @@
   flex-wrap: wrap;
   gap: 2px 8px;
 }
-.be-week .be-day-weekday {
+.tv-week .tv-day-weekday {
   font-size: 1em;
   font-weight: 800;
   color: var(--text-normal);
   letter-spacing: 0.03em;
 }
-.be-week .be-day-num {
+.tv-week .tv-day-num {
   position: relative;
   font-size: 1.6em;
   font-weight: 900;
 }
-.be-week .be-week-month {
+.tv-week .tv-week-month {
   flex-basis: 100%;
   font-size: 0.7em;
   font-weight: 600;
@@ -413,25 +426,25 @@
   letter-spacing: 0.02em;
 }
 
-.be-week .be-day-card.is-today,
-.be-week .be-day-card.is-today:hover {
+.tv-week .tv-day-card.is-today,
+.tv-week .tv-day-card.is-today:hover {
   transition: none;
   border-color: var(--background-modifier-border);
   box-shadow: none;
   background: transparent;
 }
-.be-week .be-day-card.is-today .be-day-head {
+.tv-week .tv-day-card.is-today .tv-day-head {
   background: var(--background-primary);
 }
-.be-week .be-day-card.is-today .be-day-weekday,
-.be-week .be-day-card.is-today .be-day-num {
+.tv-week .tv-day-card.is-today .tv-day-weekday,
+.tv-week .tv-day-card.is-today .tv-day-num {
   color: var(--text-normal);
 }
-.be-week .be-day-card.is-today .be-week-month {
+.tv-week .tv-day-card.is-today .tv-week-month {
   color: var(--text-normal);
   opacity: 0.85;
 }
-.be-week .be-day-card.is-today .be-day-num::after {
+.tv-week .tv-day-card.is-today .tv-day-num::after {
   /* Absolutely positioned so the dot never wraps onto its own line when the
      column gets narrow — the today header must stay the same height as the rest */
   content: "";
@@ -444,14 +457,14 @@
   background: var(--text-normal);
   transform: translateY(-50%);
 }
-.be-week .be-day-card.is-today:first-child .be-day-head {
+.tv-week .tv-day-card.is-today:first-child .tv-day-head {
   border-radius: 14px 0 0 0;
 }
-.be-week .be-day-card.is-today:last-child .be-day-head {
+.tv-week .tv-day-card.is-today:last-child .tv-day-head {
   border-radius: 0 14px 0 0;
 }
 
-.be-day-list {
+.tv-day-list {
   flex: 1;
   overflow: auto;
   padding: 6px;
@@ -460,19 +473,21 @@
   gap: 4px;
 }
 
-.be-month {
+/* === month.css: Month carousel and calendar grid === */
+
+.tv-month {
   display: flex;
   height: 100%;
   min-height: 320px;
 }
 
 /* Month top row: "W" over the week column, month name over the grid */
-.be-month-top {
+.tv-month-top {
   display: flex;
   align-items: baseline;
   flex: none;
 }
-.be-month-week-label {
+.tv-month-week-label {
   flex: none;
   width: 26px;
   text-align: center;
@@ -481,19 +496,19 @@
   color: var(--text-muted);
 }
 /* Month body: week-number column on the left, calendar grid on the right */
-.be-month-body {
+.tv-month-body {
   flex: 1;
   min-height: 0;
   display: flex;
 }
-.be-month-weeks {
+.tv-month-weeks {
   flex: none;
   width: 26px;
   display: grid;
   grid-auto-rows: 1fr;
 }
 /* Week number sits at the top of its row, next to the day header */
-.be-month-week-num {
+.tv-month-week-num {
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -502,13 +517,13 @@
   color: var(--text-muted);
 }
 
-.be-month-focus {
+.tv-month-focus {
   position: relative;
   flex: 1;
   overflow: hidden;
 }
 
-.be-month-track {
+.tv-month-track {
   position: absolute;
   top: 0;
   left: 0;
@@ -519,7 +534,7 @@
   will-change: transform;
 }
 
-.be-month-slide {
+.tv-month-slide {
   flex: 0 0 100%;
   min-height: 0;
   width: 100%;
@@ -528,7 +543,7 @@
   background: var(--background-primary);
 }
 
-.be-month-title {
+.tv-month-title {
   flex: 1;
   text-align: center;
   font-size: 1.05em;
@@ -538,7 +553,7 @@
   padding: 10px 14px 4px;
 }
 
-.be-month-grid {
+.tv-month-grid {
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -551,7 +566,7 @@
   padding: 2px 6px 10px;
 }
 
-.be-month-cell {
+.tv-month-cell {
   border: 1px solid var(--background-modifier-border);
   border-radius: 6px;
   background: var(--background-primary);
@@ -562,35 +577,35 @@
   transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
-.be-month-cell::-webkit-scrollbar {
+.tv-month-cell::-webkit-scrollbar {
   display: none;
 }
 
-.be-month .be-day-card:hover {
+.tv-month .tv-day-card:hover {
   transform: scale(1.18);
   z-index: 5;
   border-color: var(--text-normal);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
 
-.be-month-cell.is-out {
+.tv-month-cell.is-out {
   opacity: 0.35;
 }
 
-.be-month .be-day-card.is-out:hover {
+.tv-month .tv-day-card.is-out:hover {
   opacity: 1;
 }
 
-.be-month-cell.is-today {
+.tv-month-cell.is-today {
   border-color: var(--text-normal);
   border-width: 2px;
 }
 
-.be-month-cell.is-today .be-day-num {
+.tv-month-cell.is-today .tv-day-num {
   color: var(--text-normal);
 }
 
-.be-month-cell.is-today .be-day-num::after {
+.tv-month-cell.is-today .tv-day-num::after {
   content: "";
   display: inline-block;
   vertical-align: middle;
@@ -601,7 +616,7 @@
   background: var(--text-normal);
 }
 
-.be-month .be-day-head {
+.tv-month .tv-day-head {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -613,7 +628,7 @@
   flex-wrap: wrap;
 }
 
-.be-month .be-day-weekday {
+.tv-month .tv-day-weekday {
   font-size: 0.75em;
   font-weight: 700;
   color: var(--text-normal);
@@ -621,57 +636,57 @@
   letter-spacing: 0.03em;
 }
 
-.be-month .be-day-num {
+.tv-month .tv-day-num {
   font-size: 1em;
   font-weight: 700;
   color: var(--text-normal);
 }
 
-.be-month .be-day-list {
+.tv-month .tv-day-list {
   flex: none;
   overflow: visible;
   padding: 2px 4px;
   gap: 1px;
 }
 
-.be-month .be-day-active-title,
-.be-month .be-day-done-title {
+.tv-month .tv-day-active-title,
+.tv-month .tv-day-done-title {
   font-size: 0.75em;
   padding: 1px 0 2px;
 }
 
-.be-month .be-day-active-title {
+.tv-month .tv-day-active-title {
   padding-left: 0;
 }
 
-.be-month .be-day-done-title {
+.tv-month .tv-day-done-title {
   padding-left: 0;
 }
 
-.be-month .be-task-tags {
+.tv-month .tv-task-tags {
   display: none;
 }
 
-.be-month .be-day-group {
+.tv-month .tv-day-group {
   margin-bottom: 3px;
 }
 
-.be-month .be-day-group-title {
+.tv-month .tv-day-group-title {
   font-size: 0.63em;
   padding: 2px 2px 0;
 }
 
-.be-month .be-day-group.is-collapsed {
+.tv-month .tv-day-group.is-collapsed {
   cursor: pointer;
   border-radius: 4px;
   transition: background 120ms ease;
 }
 
-.be-month .be-day-group.is-collapsed:hover {
+.tv-month .tv-day-group.is-collapsed:hover {
   background: var(--background-modifier-hover);
 }
 
-.be-month .be-day-group.is-collapsed .be-day-group-title {
+.tv-month .tv-day-group.is-collapsed .tv-day-group-title {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -679,7 +694,7 @@
   max-width: 100%;
 }
 
-.be-month .be-day-group.is-collapsed .be-day-group-name {
+.tv-month .tv-day-group.is-collapsed .tv-day-group-name {
   flex: 0 1 auto;
   min-width: 0;
   overflow: hidden;
@@ -689,17 +704,17 @@
   cursor: default;
 }
 
-.be-month .be-day-group:not(.is-collapsed) .be-day-group-name {
+.tv-month .tv-day-group:not(.is-collapsed) .tv-day-group-name {
   cursor: pointer;
 }
 
-.be-month .be-day-group-count {
+.tv-month .tv-day-group-count {
   flex: none;
   color: var(--text-faint);
   font-size: 0.9em;
 }
 
-.be-month .be-day-group-chevron {
+.tv-month .tv-day-group-chevron {
   flex: none;
   color: var(--text-muted);
   font-size: 0.9em;
@@ -707,16 +722,16 @@
   transition: transform 140ms ease;
 }
 
-.be-month .be-day-group:not(.is-collapsed) .be-day-group-chevron {
+.tv-month .tv-day-group:not(.is-collapsed) .tv-day-group-chevron {
   transform: rotate(90deg);
 }
 
-.be-month .be-day-group-tasks {
+.tv-month .tv-day-group-tasks {
   gap: 0;
   padding: 1px 2px;
 }
 
-.be-month .be-task {
+.tv-month .tv-task {
   padding-left: 2px;
   padding-top: 1px;
   padding-bottom: 1px;
@@ -725,52 +740,54 @@
   gap: 4px;
 }
 
-.be-month .be-task-box {
+.tv-month .tv-task-box {
   padding: 1px 0 0 0;
   margin-left: -1px;
 }
 
-.be-month .be-check-svg {
+.tv-month .tv-check-svg {
   width: 0.78em;
   height: 0.78em;
 }
 
-.be-month .be-day-group-today {
+.tv-month .tv-day-group-today {
   font-size: 0.58em;
   padding: 0 4px;
 }
 
-.be-month .be-day-done-section {
+.tv-month .tv-day-done-section {
   flex: none;
   margin-top: 2px;
   padding: 0 4px;
 }
 
-.be-month .be-day-done-bar {
+.tv-month .tv-day-done-bar {
   position: static;
   height: 1px;
   background: var(--background-modifier-border);
   margin: 0 -4px 2px;
 }
 
-.be-month .be-day-done-list {
+.tv-month .tv-day-done-list {
   gap: 0;
   padding: 0 0 2px;
 }
 
-.be-day {
+/* === day.css: Day carousel and day-card chrome === */
+
+.tv-day {
   display: flex;
   height: 100%;
   min-height: 320px;
 }
 
-.be-day-focus {
+.tv-day-focus {
   position: relative;
   flex: 1;
   overflow: hidden;
 }
 
-.be-day-track {
+.tv-day-track {
   position: absolute;
   top: 28px;
   left: 0;
@@ -779,7 +796,7 @@
   will-change: transform;
 }
 
-.be-day-slide {
+.tv-day-slide {
   position: relative;
   flex: 0 0 93%;
   min-width: 0;
@@ -794,25 +811,25 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
   transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
 }
-.be-day-slide::-webkit-scrollbar {
+.tv-day-slide::-webkit-scrollbar {
   display: none;
 }
 
-.be-day-track .be-day-slide:nth-child(2) {
+.tv-day-track .tv-day-slide:nth-child(2) {
   z-index: 2;
   transform: translateY(-8px);
   border-color: var(--background-modifier-border-hover);
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05), 0 10px 16px rgba(0, 0, 0, 0.09);
 }
 
-.be-day-track .be-day-slide:nth-child(1),
-.be-day-track .be-day-slide:nth-child(3) {
+.tv-day-track .tv-day-slide:nth-child(1),
+.tv-day-track .tv-day-slide:nth-child(3) {
   opacity: 0.45;
   transform: scale(0.96) translateY(12px);
   z-index: 1;
 }
 
-.be-day-slide .be-day-head {
+.tv-day-slide .tv-day-head {
   position: sticky;
   top: 0;
   z-index: 3;
@@ -821,18 +838,18 @@
   padding-left: 16px;
 }
 
-.be-day-slide .be-day-list {
+.tv-day-slide .tv-day-list {
   flex: none;
   overflow: visible;
 }
 
-.be-day-slide .be-task {
+.tv-day-slide .tv-task {
   font-size: 1.08em;
   line-height: 1.5;
   padding: 5px 20px;
 }
 
-.be-day-active-title {
+.tv-day-active-title {
   font-size: 1.45em;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -840,11 +857,11 @@
   padding: 2px 10px 4px;
 }
 
-.be-day-group {
+.tv-day-group {
   margin-bottom: 10px;
 }
 
-.be-day-group-title {
+.tv-day-group-title {
   position: relative;
   display: flex;
   align-items: center;
@@ -859,7 +876,7 @@
 /* Priority/reorder button in the day header (shown on hover).
    Absolutely positioned so it never changes the header height — the bottom
    line stays in place */
-.be-day-priority {
+.tv-day-priority {
   position: absolute;
   right: 10px;
   top: 50%;
@@ -880,35 +897,37 @@
   border-radius: 6px;
   transition: background 120ms ease, color 120ms ease;
 }
-.be-day-head:hover .be-day-priority,
-.be-day-priority.is-open,
-.be-day-priority.is-show {
+.tv-day-head:hover .tv-day-priority,
+.tv-day-priority.is-open,
+.tv-day-priority.is-show {
   display: inline-flex;
 }
-.be-day-priority:hover {
+.tv-day-priority:hover {
   background: var(--background-modifier-hover) !important;
   color: var(--text-normal);
 }
 
+/* === priority.css: Priority popup and shared priority rows === */
+
 /* Priority popup: the ordered list of prioritized notes (drag to reorder).
-   Reuses the task menu look (be-task-menu-popup / items). */
-.be-priority-popup {
+   Reuses the task menu look (tv-task-menu-popup / items). */
+.tv-priority-popup {
   min-width: 220px;
   max-height: 320px;
   overflow-y: auto;
 }
-.be-priority-row {
+.tv-priority-row {
   /* Reorder happens via the up/down arrows (no drag), with a smooth glide */
   transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), background 120ms ease;
 }
-.be-priority-num {
+.tv-priority-num {
   flex: none;
   width: 20px;
   text-align: center;
   color: var(--text-normal);
   font-weight: 400;
 }
-.be-priority-tip {
+.tv-priority-tip {
   padding: 4px 10px 6px;
   font-size: 0.72em;
   color: var(--text-muted);
@@ -917,10 +936,10 @@
   margin-bottom: 4px;
 }
 /* Gentle highlight for groups that are prioritized globally */
-.be-priority-row.is-global {
+.tv-priority-row.is-global {
   background: var(--background-modifier-hover);
 }
-.be-priority-tag {
+.tv-priority-tag {
   flex: none;
   margin-left: 6px;
   font-size: 0.68em;
@@ -928,7 +947,7 @@
   letter-spacing: 0.03em;
 }
 /* Up/down arrow buttons on each priority row */
-.be-priority-arrow {
+.tv-priority-arrow {
   flex: none;
   width: 22px;
   height: 22px;
@@ -945,42 +964,44 @@
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
-.be-priority-arrow:hover {
+.tv-priority-arrow:hover {
   background: var(--background-modifier-hover) !important;
   color: var(--text-normal);
 }
-.be-priority-arrow svg {
+.tv-priority-arrow svg {
   width: 1.05em;
   height: 1.05em;
 }
-.be-priority-name {
+.tv-priority-name {
   flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.be-priority-hint {
+.tv-priority-hint {
   color: var(--text-faint);
   font-size: 0.85em;
   cursor: default;
 }
 
-.be-day-slide .be-day-group-title {
+/* === day-content.css: Day groups, titles, done section on day slides === */
+
+.tv-day-slide .tv-day-group-title {
   padding-left: 16px;
 }
 
-.be-day-group-name {
+.tv-day-group-name {
   cursor: pointer;
   transition: color 120ms ease;
 }
 
-.be-day-group-name:hover {
+.tv-day-group-name:hover {
   color: var(--interactive-accent);
   text-decoration: underline;
 }
 
-.be-day-group-today {
+.tv-day-group-today {
   margin-left: 8px;
   font-size: 0.7em;
   font-weight: 500;
@@ -991,20 +1012,20 @@
   vertical-align: middle;
 }
 
-.be-day-group-tasks {
+.tv-day-group-tasks {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 2px 4px;
 }
 
-.be-day-done-section {
+.tv-day-done-section {
   position: relative;
   margin-top: 6px;
   padding: 0 6px;
 }
 
-.be-day-done-bar {
+.tv-day-done-bar {
   position: absolute;
   top: 0;
   left: 0;
@@ -1015,11 +1036,11 @@
   pointer-events: none;
 }
 
-.be-day-done-section.is-empty {
+.tv-day-done-section.is-empty {
   display: none;
 }
 
-.be-day-done-title {
+.tv-day-done-title {
   font-size: 1.45em;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -1027,38 +1048,40 @@
   padding: 6px 10px 4px;
 }
 
-.be-day-done-list {
+.tv-day-done-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: 2px 0 8px;
 }
 
-.be-day-num-group {
+.tv-day-num-group {
   display: inline-flex;
   align-items: baseline;
   gap: 8px;
 }
 
-.be-day-num-big {
+.tv-day-num-big {
   font-size: 2.4em;
   font-weight: 900;
 }
 
-.be-day-slide .be-day-head .be-day-weekday {
+.tv-day-slide .tv-day-head .tv-day-weekday {
   font-size: 1.7em;
   font-weight: 800;
   text-transform: capitalize;
   color: var(--text-normal);
 }
 
-.be-day-month {
+.tv-day-month {
   font-size: 1.05em;
   font-weight: 600;
   color: var(--text-normal);
 }
 
-.be-task {
+/* === task.css: Task rows, checkbox, tags, menus, inline edit === */
+
+.tv-task {
   display: flex;
   /* The checkbox stays on the first text line instead of centering vertically
      on multi-line tasks (matches the native Obsidian task list) */
@@ -1072,7 +1095,7 @@
   position: relative;
 }
 
-.be-task-menu {
+.tv-task-menu {
   /* Floats over the task text on hover instead of pushing it aside */
   position: absolute;
   right: 2px;
@@ -1096,14 +1119,14 @@
   transition: background 120ms ease, color 120ms ease;
 }
 
-.be-task-menu svg {
+.tv-task-menu svg {
   width: 1.35em;
   height: 1.35em;
 }
 
-.be-task-menu:hover,
-.be-task-menu:focus,
-.be-task-menu:active {
+.tv-task-menu:hover,
+.tv-task-menu:focus,
+.tv-task-menu:active {
   /* Fill the hit area on hover */
   background: var(--background-modifier-hover) !important;
   border: none !important;
@@ -1111,23 +1134,23 @@
   outline: none !important;
 }
 
-.be-task-menu:hover {
+.tv-task-menu:hover {
   color: var(--text-normal);
 }
 
-.be-day-slide .be-task:hover .be-task-menu {
+.tv-day-slide .tv-task:hover .tv-task-menu {
   display: inline-flex;
 }
 
-.be-task.is-editing {
+.tv-task.is-editing {
   pointer-events: none;
 }
 
-.be-task.is-editing .be-task-edit {
+.tv-task.is-editing .tv-task-edit {
   pointer-events: auto;
 }
 
-.be-task-menu-popup {
+.tv-task-menu-popup {
   position: fixed;
   z-index: 100;
   min-width: 150px;
@@ -1138,7 +1161,7 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
 }
 
-.be-task-menu-item {
+.tv-task-menu-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1149,11 +1172,11 @@
   font-size: 0.9em;
 }
 
-.be-task-menu-item:hover {
+.tv-task-menu-item:hover {
   background: var(--background-modifier-hover);
 }
 
-.be-task-edit {
+.tv-task-edit {
   flex: 1;
   min-width: 0;
   font-size: inherit;
@@ -1172,20 +1195,20 @@
   word-break: break-word;
 }
 
-.be-task,
-.be-task-box,
-.be-task:focus,
-.be-task-box:focus,
-.be-task *:focus {
+.tv-task,
+.tv-task-box,
+.tv-task:focus,
+.tv-task-box:focus,
+.tv-task *:focus {
   outline: none !important;
   box-shadow: none !important;
 }
 
-.be-task.is-done .be-task-text {
+.tv-task.is-done .tv-task-text {
   color: var(--text-faint);
 }
 
-.be-task-box {
+.tv-task-box {
   flex: none;
   display: inline-flex;
   /* Align the icon to the top of the row so the checkbox sits on the first
@@ -1202,15 +1225,15 @@
   border-radius: 0;
 }
 
-.be-task-box:hover,
-.be-task-box:active,
-.be-task-box:focus {
+.tv-task-box:hover,
+.tv-task-box:active,
+.tv-task-box:focus {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
 }
 
-.be-task-text {
+.tv-task-text {
   flex: 1;
   min-width: 0;
   display: flex;
@@ -1223,7 +1246,7 @@
   user-select: text;
 }
 
-.be-task-inner {
+.tv-task-inner {
   transition: text-decoration-color 0.4s ease;
   /* Preserve line breaks added while editing a task */
   white-space: pre-wrap;
@@ -1232,60 +1255,60 @@
 /* Only done tasks carry the strikethrough. Open tasks must not have the
    decoration at all — a transparent line-through shows up as a line over a
    selection in some themes, so it would flash on highlight. */
-.be-task.is-done .be-task-inner {
+.tv-task.is-done .tv-task-inner {
   text-decoration: line-through;
   text-decoration-color: currentColor;
 }
 
 /* Inline markdown rendered inside task text */
-.be-task-inner code {
+.tv-task-inner code {
   font-family: var(--font-monospace);
   font-size: 0.88em;
   background: var(--background-modifier-border);
   border-radius: 4px;
   padding: 0 4px;
 }
-.be-task-inner mark {
+.tv-task-inner mark {
   background: var(--text-highlight-bg);
   color: inherit;
   border-radius: 3px;
   padding: 0 2px;
 }
-.be-task-inner a {
+.tv-task-inner a {
   color: var(--interactive-accent);
   text-decoration: underline;
   cursor: pointer;
 }
 
-.be-check-svg {
+.tv-check-svg {
   width: 1.5em;
   height: 1.5em;
   display: block;
   flex: none;
 }
 
-.be-check-mark {
+.tv-check-mark {
   stroke-dashoffset: 30;
   transition: stroke-dashoffset 0.45s ease;
 }
 
-.be-task-box.is-checked .be-check-mark {
+.tv-task-box.is-checked .tv-check-mark {
   stroke-dashoffset: 0;
 }
 
-.be-task-time {
+.tv-task-time {
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
 
-.be-task-tags {
+.tv-task-tags {
   display: inline-flex;
   flex-wrap: wrap;
   gap: 3px;
   flex: none;
 }
 
-.be-tag {
+.tv-tag {
   font-size: 0.72em;
   background: var(--tag-background);
   color: var(--tag-color);
@@ -1293,39 +1316,41 @@
   padding: 1px 5px;
 }
 
-.be-day-list.be-hidden {
+/* === utilities.css: Hidden / no-grow / scrollbar utilities === */
+
+.tv-day-list.tv-hidden {
   display: none;
 }
 
-.be-day-slide.be-no-grow,
-.be-week-slide.be-no-grow,
-.be-month-slide.be-no-grow {
+.tv-day-slide.tv-no-grow,
+.tv-week-slide.tv-no-grow,
+.tv-month-slide.tv-no-grow {
   flex: none;
 }
 
-.be-task-clone {
+.tv-task-clone {
   position: absolute;
   pointer-events: none;
 }
 
-.be-task.is-editing .be-task-text {
+.tv-task.is-editing .tv-task-text {
   display: none;
 }
 
 /* When the active-task list is hidden, Done sits flush against the header so
    the bar above Done lands exactly on the header's line before fading out */
-.be-day-done-section.be-done-top {
+.tv-day-done-section.tv-done-top {
   margin-top: 0;
 }
 
 /* Hide scrollbars on every scrollable container in the plugin (day card, week
    columns, month cells, lists) — no side bar appears while scrolling */
-.be-root,
-.be-root * {
+.tv-root,
+.tv-root * {
   scrollbar-width: none;
 }
-.be-root::-webkit-scrollbar,
-.be-root *::-webkit-scrollbar {
+.tv-root::-webkit-scrollbar,
+.tv-root *::-webkit-scrollbar {
   display: none !important;
   width: 0 !important;
   height: 0 !important;

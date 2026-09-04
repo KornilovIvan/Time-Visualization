@@ -167,12 +167,12 @@ export function makeGroupTitle(
   path: string,
   dayKey?: string
 ): void {
-  const title = group.createDiv({ cls: "be-day-group-title" });
-  const name = title.createSpan({ cls: "be-day-group-name" });
+  const title = group.createDiv({ cls: "tv-day-group-title" });
+  const name = title.createSpan({ cls: "tv-day-group-name" });
   name.setText(fileName(path) + ":");
   // "Today" badge for the current day's daily note
   if (dayKey && fileName(path) === dayKey) {
-    title.createSpan({ cls: "be-day-group-today", text: "Today" });
+    title.createSpan({ cls: "tv-day-group-today", text: "Today" });
   }
   attachNoteLink(view, name, path);
 }
@@ -185,11 +185,11 @@ export function createTaskGroup(
   /** When set, marks an active timed/untimed subgroup (done groups omit this). */
   timed?: boolean
 ): HTMLElement {
-  const group = container.createDiv({ cls: "be-day-group" });
+  const group = container.createDiv({ cls: "tv-day-group" });
   group.dataset.file = path;
   if (timed !== undefined) group.dataset.timed = timed ? "1" : "0";
   makeGroupTitle(view, group, path, dayKey);
-  group.createDiv({ cls: "be-day-group-tasks" });
+  group.createDiv({ cls: "tv-day-group-tasks" });
   return group;
 }
 
@@ -203,7 +203,7 @@ export function fillGroup(
   timed?: boolean
 ): void {
   const group = createTaskGroup(view, container, path, key, timed);
-  const gl = group.querySelector(".be-day-group-tasks") as HTMLElement;
+  const gl = group.querySelector(".tv-day-group-tasks") as HTMLElement;
   for (const t of tasks) gl.appendChild(buildTaskRow(view, t, compact));
 }
 
@@ -219,7 +219,7 @@ export function buildCollapsedGroup(
   section: "active" | "done",
   timed?: boolean
 ): HTMLElement {
-  const group = container.createDiv({ cls: "be-day-group is-collapsed" });
+  const group = container.createDiv({ cls: "tv-day-group is-collapsed" });
   group.dataset.file = path;
   group.dataset.day = key;
   group.dataset.section = section;
@@ -227,17 +227,17 @@ export function buildCollapsedGroup(
 
   // makeGroupTitle is not used: in the collapsed state the name must not be a
   // link (CSS sets its pointer-events to none)
-  const title = group.createDiv({ cls: "be-day-group-title" });
-  const name = title.createSpan({ cls: "be-day-group-name", text: fileName(path) + ":" });
-  title.createSpan({ cls: "be-day-group-count", text: String(tasks.length) });
-  title.createSpan({ cls: "be-day-group-chevron", text: "▸" });
+  const title = group.createDiv({ cls: "tv-day-group-title" });
+  const name = title.createSpan({ cls: "tv-day-group-name", text: fileName(path) + ":" });
+  title.createSpan({ cls: "tv-day-group-count", text: String(tasks.length) });
+  title.createSpan({ cls: "tv-day-group-chevron", text: "▸" });
 
-  const gl = group.createDiv({ cls: "be-day-group-tasks" });
+  const gl = group.createDiv({ cls: "tv-day-group-tasks" });
 
   attachNoteLink(view, name, path);
 
   group.addEventListener("click", (ev) => {
-    if ((ev.target as HTMLElement).closest(".be-task")) return;
+    if ((ev.target as HTMLElement).closest(".tv-task")) return;
     ev.stopPropagation();
     if (view.isSelectionClick(ev)) return;
     const collapsed = group.classList.toggle("is-collapsed");
@@ -269,7 +269,7 @@ export function renderCheckbox(box: HTMLElement, compact: boolean): void {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
-  svg.setAttribute("class", "be-check-svg");
+  svg.setAttribute("class", "tv-check-svg");
   const rect = document.createElementNS(ns, "rect");
   rect.setAttribute("x", "3");
   rect.setAttribute("y", "3");
@@ -289,7 +289,7 @@ export function renderCheckbox(box: HTMLElement, compact: boolean): void {
   path.setAttribute("stroke-linejoin", "round");
   path.setAttribute("stroke-dasharray", "30");
   path.setAttribute("stroke-dashoffset", "30");
-  path.setAttribute("class", "be-check-mark");
+  path.setAttribute("class", "tv-check-mark");
   svg.appendChild(path);
   box.empty();
   box.appendChild(svg);
@@ -297,10 +297,10 @@ export function renderCheckbox(box: HTMLElement, compact: boolean): void {
 
 export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): HTMLElement {
   const row = createDiv();
-  row.className = "be-task" + (t.checked ? " is-done" : "");
+  row.className = "tv-task" + (t.checked ? " is-done" : "");
 
   const box = row.createEl("button", {
-    cls: "be-task-box" + (t.checked ? " is-checked" : ""),
+    cls: "tv-task-box" + (t.checked ? " is-checked" : ""),
   });
   renderCheckbox(box, compact);
 
@@ -308,18 +308,18 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
   row.dataset.taskKey = taskKey;
   view.taskRefs.set(taskKey, t);
 
-  const text = row.createDiv({ cls: "be-task-text" });
-  const textInner = text.createSpan({ cls: "be-task-inner" });
+  const text = row.createDiv({ cls: "tv-task-text" });
+  const textInner = text.createSpan({ cls: "tv-task-inner" });
   textInner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text)));
 
   if (t.time) {
-    text.createSpan({ cls: "be-task-time", text: " " + t.time });
+    text.createSpan({ cls: "tv-task-time", text: " " + t.time });
   }
 
   if (t.tags.length > 0) {
-    const tags = text.createDiv({ cls: "be-task-tags" });
+    const tags = text.createDiv({ cls: "tv-task-tags" });
     for (const tag of t.tags) {
-      tags.createSpan({ cls: "be-tag", text: tag });
+      tags.createSpan({ cls: "tv-tag", text: tag });
     }
   }
 
@@ -327,7 +327,7 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
   // Custom-format tasks are read-only, so the menu is omitted.
   if (t.format !== "custom") {
     const menuBtn = row.createEl("button", {
-      cls: "be-task-menu",
+      cls: "tv-task-menu",
       attr: { "aria-label": "Task menu" },
     });
     setIcon(menuBtn, "more-horizontal");
@@ -344,16 +344,16 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
 /** Inline editing of the task text (day card only).
     Enter — save, Escape — cancel, blur — save. */
 export function startEditTask(view: ViewHost, row: HTMLElement, t: ParsedTask): void {
-  const textEl = row.querySelector(".be-task-text") as HTMLElement | null;
+  const textEl = row.querySelector(".tv-task-text") as HTMLElement | null;
   if (!textEl) return;
-  const inner = textEl.querySelector(".be-task-inner") as HTMLElement | null;
+  const inner = textEl.querySelector(".tv-task-inner") as HTMLElement | null;
 
   row.classList.add("is-editing");
   const taskKey = `${t.filePath}:${t.line}`;
   view.editingTaskKey = taskKey;
 
   const input = createEl("textarea");
-  input.className = "be-task-edit";
+  input.className = "tv-task-edit";
   input.value = t.text;
   row.insertBefore(input, textEl);
   // Auto-grow so the full multi-line content stays editable in place (the

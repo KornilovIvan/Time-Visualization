@@ -1,0 +1,77 @@
+/* === priority.css: Priority popup and shared priority rows === */
+
+/* Priority popup: the ordered list of prioritized notes (drag to reorder).
+   Reuses the task menu look (tv-task-menu-popup / items). */
+.tv-priority-popup {
+  min-width: 220px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.tv-priority-row {
+  /* Reorder happens via the up/down arrows (no drag), with a smooth glide */
+  transition: transform 320ms cubic-bezier(0.22, 1, 0.36, 1), background 120ms ease;
+}
+.tv-priority-num {
+  flex: none;
+  width: 20px;
+  text-align: center;
+  color: var(--text-normal);
+  font-weight: 400;
+}
+.tv-priority-tip {
+  padding: 4px 10px 6px;
+  font-size: 0.72em;
+  color: var(--text-muted);
+  cursor: default;
+  border-bottom: 1px solid var(--background-modifier-border);
+  margin-bottom: 4px;
+}
+/* Gentle highlight for groups that are prioritized globally */
+.tv-priority-row.is-global {
+  background: var(--background-modifier-hover);
+}
+.tv-priority-tag {
+  flex: none;
+  margin-left: 6px;
+  font-size: 0.68em;
+  color: var(--text-muted);
+  letter-spacing: 0.03em;
+}
+/* Up/down arrow buttons on each priority row */
+.tv-priority-arrow {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 5px;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+.tv-priority-arrow:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+.tv-priority-arrow svg {
+  width: 1.05em;
+  height: 1.05em;
+}
+.tv-priority-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tv-priority-hint {
+  color: var(--text-faint);
+  font-size: 0.85em;
+  cursor: default;
+}

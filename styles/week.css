@@ -1,0 +1,252 @@
+/* === week.css: Week carousel and week-level day cards === */
+
+.tv-week {
+  display: flex;
+  height: 100%;
+  min-height: 320px;
+}
+
+.tv-week-focus {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tv-week-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+
+.tv-week-slide {
+  flex: 0 0 90%;
+  min-height: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 14px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  transition: opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
+}
+
+.tv-week-track .tv-week-slide:nth-child(2) {
+  z-index: 2;
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05), 0 10px 16px rgba(0, 0, 0, 0.09);
+}
+
+.tv-week-track .tv-week-slide:nth-child(1) {
+  opacity: 0.45;
+  transform: scale(0.96) translateY(-8px);
+  z-index: 1;
+}
+.tv-week-track .tv-week-slide:nth-child(3) {
+  opacity: 0.45;
+  transform: scale(0.96) translateY(8px);
+  z-index: 1;
+}
+
+.tv-week .tv-task-tags {
+  display: none;
+}
+
+.tv-week .tv-day-card {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  border-right: 1px solid var(--background-modifier-border);
+  overflow-y: auto;
+}
+.tv-week .tv-day-card::-webkit-scrollbar {
+  display: none;
+}
+.tv-week .tv-day-card:last-child {
+  border-right: none;
+}
+
+.tv-week .tv-day-card:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+  border-color: var(--background-modifier-border);
+}
+
+.tv-week .tv-task {
+  padding-left: 2px;
+}
+.tv-week .tv-task-box {
+  padding: 1px 0 0 0;
+  margin-left: -1px;
+}
+.tv-week .tv-check-svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+.tv-week .tv-day-group-title {
+  font-size: 0.84em;
+  padding-left: 0;
+}
+
+.tv-week .tv-day-active-title,
+.tv-week .tv-day-done-title {
+  font-size: 1.1em;
+  padding: 1px 0 2px;
+}
+.tv-week .tv-day-active-title {
+  padding-left: 0;
+}
+.tv-week .tv-day-done-title {
+  padding-left: 0;
+}
+.tv-week .tv-day-list {
+  flex: none;
+  overflow: visible;
+  padding: 4px 6px;
+}
+.tv-week .tv-day-group {
+  margin-bottom: 6px;
+}
+.tv-week .tv-day-done-section {
+  margin-top: 4px;
+  padding: 0 6px;
+}
+.tv-week .tv-day-done-bar {
+  position: static;
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 0 -6px 4px;
+}
+.tv-week .tv-day-done-list {
+  gap: 1px;
+  padding: 1px 0 4px;
+}
+.tv-week .tv-day-group-tasks {
+  padding: 1px 4px;
+}
+
+.tv-day-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 10px;
+  background: var(--background-primary);
+  overflow: hidden;
+  cursor: pointer;
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  min-width: 0;
+}
+
+.tv-day-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--interactive-accent);
+}
+
+.tv-day-card.is-today {
+  border-color: var(--interactive-accent);
+}
+
+.tv-day-head {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.tv-day-weekday {
+  font-size: 0.78em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.tv-day-num {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+
+.tv-week .tv-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--background-primary);
+  flex-wrap: wrap;
+  gap: 2px 8px;
+}
+.tv-week .tv-day-weekday {
+  font-size: 1em;
+  font-weight: 800;
+  color: var(--text-normal);
+  letter-spacing: 0.03em;
+}
+.tv-week .tv-day-num {
+  position: relative;
+  font-size: 1.6em;
+  font-weight: 900;
+}
+.tv-week .tv-week-month {
+  flex-basis: 100%;
+  font-size: 0.7em;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.tv-week .tv-day-card.is-today,
+.tv-week .tv-day-card.is-today:hover {
+  transition: none;
+  border-color: var(--background-modifier-border);
+  box-shadow: none;
+  background: transparent;
+}
+.tv-week .tv-day-card.is-today .tv-day-head {
+  background: var(--background-primary);
+}
+.tv-week .tv-day-card.is-today .tv-day-weekday,
+.tv-week .tv-day-card.is-today .tv-day-num {
+  color: var(--text-normal);
+}
+.tv-week .tv-day-card.is-today .tv-week-month {
+  color: var(--text-normal);
+  opacity: 0.85;
+}
+.tv-week .tv-day-card.is-today .tv-day-num::after {
+  /* Absolutely positioned so the dot never wraps onto its own line when the
+     column gets narrow — the today header must stay the same height as the rest */
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -14px;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--text-normal);
+  transform: translateY(-50%);
+}
+.tv-week .tv-day-card.is-today:first-child .tv-day-head {
+  border-radius: 14px 0 0 0;
+}
+.tv-week .tv-day-card.is-today:last-child .tv-day-head {
+  border-radius: 0 14px 0 0;
+}
+
+.tv-day-list {
+  flex: 1;
+  overflow: auto;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}

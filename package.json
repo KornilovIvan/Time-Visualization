@@ -4,8 +4,9 @@
   "description": "Time Visualization for Obsidian",
   "main": "main.js",
   "scripts": {
-    "dev": "node esbuild.config.mjs",
-    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "styles": "node styles-build.mjs",
+    "dev": "node styles-build.mjs && node esbuild.config.mjs",
+    "build": "node styles-build.mjs && tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
     "version": "node version-bump.mjs && git add manifest.json versions.json"
   },
   "keywords": [

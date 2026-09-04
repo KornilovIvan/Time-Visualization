@@ -1,0 +1,133 @@
+/* === day.css: Day carousel and day-card chrome === */
+
+.tv-day {
+  display: flex;
+  height: 100%;
+  min-height: 320px;
+}
+
+.tv-day-focus {
+  position: relative;
+  flex: 1;
+  overflow: hidden;
+}
+
+.tv-day-track {
+  position: absolute;
+  top: 28px;
+  left: 0;
+  height: calc(100% - 46px);
+  display: flex;
+  will-change: transform;
+}
+
+.tv-day-slide {
+  position: relative;
+  flex: 0 0 93%;
+  min-width: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  background: var(--background-primary);
+  overflow-x: hidden;
+  overflow-y: auto;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
+  transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
+}
+.tv-day-slide::-webkit-scrollbar {
+  display: none;
+}
+
+.tv-day-track .tv-day-slide:nth-child(2) {
+  z-index: 2;
+  transform: translateY(-8px);
+  border-color: var(--background-modifier-border-hover);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05), 0 10px 16px rgba(0, 0, 0, 0.09);
+}
+
+.tv-day-track .tv-day-slide:nth-child(1),
+.tv-day-track .tv-day-slide:nth-child(3) {
+  opacity: 0.45;
+  transform: scale(0.96) translateY(12px);
+  z-index: 1;
+}
+
+.tv-day-slide .tv-day-head {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--background-primary);
+  border-bottom: 1px solid var(--background-modifier-border);
+  padding-left: 16px;
+}
+
+.tv-day-slide .tv-day-list {
+  flex: none;
+  overflow: visible;
+}
+
+.tv-day-slide .tv-task {
+  font-size: 1.08em;
+  line-height: 1.5;
+  padding: 5px 20px;
+}
+
+.tv-day-active-title {
+  font-size: 1.45em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-normal);
+  padding: 2px 10px 4px;
+}
+
+.tv-day-group {
+  margin-bottom: 10px;
+}
+
+.tv-day-group-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 1.2em;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-normal);
+  padding: 4px 10px 2px;
+}
+
+/* Priority/reorder button in the day header (shown on hover).
+   Absolutely positioned so it never changes the header height — the bottom
+   line stays in place */
+.tv-day-priority {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  align-items: center;
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 120ms ease, color 120ms ease;
+}
+.tv-day-head:hover .tv-day-priority,
+.tv-day-priority.is-open,
+.tv-day-priority.is-show {
+  display: inline-flex;
+}
+.tv-day-priority:hover {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}

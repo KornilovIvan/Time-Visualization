@@ -1,0 +1,236 @@
+/* === task.css: Task rows, checkbox, tags, menus, inline edit === */
+
+.tv-task {
+  display: flex;
+  /* The checkbox stays on the first text line instead of centering vertically
+     on multi-line tasks (matches the native Obsidian task list) */
+  align-items: flex-start;
+  gap: 6px;
+  padding: 3px 4px;
+  border-radius: 6px;
+  font-size: 0.82em;
+  line-height: 1.35;
+  cursor: pointer;
+  position: relative;
+}
+
+.tv-task-menu {
+  /* Floats over the task text on hover instead of pushing it aside */
+  position: absolute;
+  right: 2px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  /* Comfortable tap/hover target */
+  min-width: 28px;
+  min-height: 28px;
+  padding: 6px;
+  border-radius: 6px;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tv-task-menu svg {
+  width: 1.35em;
+  height: 1.35em;
+}
+
+.tv-task-menu:hover,
+.tv-task-menu:focus,
+.tv-task-menu:active {
+  /* Fill the hit area on hover */
+  background: var(--background-modifier-hover) !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.tv-task-menu:hover {
+  color: var(--text-normal);
+}
+
+.tv-day-slide .tv-task:hover .tv-task-menu {
+  display: inline-flex;
+}
+
+.tv-task.is-editing {
+  pointer-events: none;
+}
+
+.tv-task.is-editing .tv-task-edit {
+  pointer-events: auto;
+}
+
+.tv-task-menu-popup {
+  position: fixed;
+  z-index: 100;
+  min-width: 150px;
+  padding: 4px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.tv-task-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--text-normal);
+  font-size: 0.9em;
+}
+
+.tv-task-menu-item:hover {
+  background: var(--background-modifier-hover);
+}
+
+.tv-task-edit {
+  flex: 1;
+  min-width: 0;
+  font-size: inherit;
+  font-family: inherit;
+  line-height: inherit;
+  color: var(--text-normal);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--interactive-accent);
+  outline: none;
+  padding: 0 2px;
+  /* Multi-line editing: the field fills the task space and grows with content */
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.tv-task,
+.tv-task-box,
+.tv-task:focus,
+.tv-task-box:focus,
+.tv-task *:focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+.tv-task.is-done .tv-task-text {
+  color: var(--text-faint);
+}
+
+.tv-task-box {
+  flex: none;
+  display: inline-flex;
+  /* Align the icon to the top of the row so the checkbox sits on the first
+     text line (multi-line tasks used to center it vertically). A small top
+     padding compensates the icon's internal viewBox offset (y=3). */
+  align-items: flex-start;
+  justify-content: center;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 2px 2px 0 0;
+  cursor: pointer;
+  border-radius: 0;
+}
+
+.tv-task-box:hover,
+.tv-task-box:active,
+.tv-task-box:focus {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.tv-task-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+  word-break: break-word;
+  color: var(--text-normal);
+  /* Allow selecting task text with the mouse (drag-select) */
+  user-select: text;
+}
+
+.tv-task-inner {
+  transition: text-decoration-color 0.4s ease;
+  /* Preserve line breaks added while editing a task */
+  white-space: pre-wrap;
+}
+
+/* Only done tasks carry the strikethrough. Open tasks must not have the
+   decoration at all — a transparent line-through shows up as a line over a
+   selection in some themes, so it would flash on highlight. */
+.tv-task.is-done .tv-task-inner {
+  text-decoration: line-through;
+  text-decoration-color: currentColor;
+}
+
+/* Inline markdown rendered inside task text */
+.tv-task-inner code {
+  font-family: var(--font-monospace);
+  font-size: 0.88em;
+  background: var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 0 4px;
+}
+.tv-task-inner mark {
+  background: var(--text-highlight-bg);
+  color: inherit;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+.tv-task-inner a {
+  color: var(--interactive-accent);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.tv-check-svg {
+  width: 1.5em;
+  height: 1.5em;
+  display: block;
+  flex: none;
+}
+
+.tv-check-mark {
+  stroke-dashoffset: 30;
+  transition: stroke-dashoffset 0.45s ease;
+}
+
+.tv-task-box.is-checked .tv-check-mark {
+  stroke-dashoffset: 0;
+}
+
+.tv-task-time {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+
+.tv-task-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  flex: none;
+}
+
+.tv-tag {
+  font-size: 0.72em;
+  background: var(--tag-background);
+  color: var(--tag-color);
+  border-radius: 4px;
+  padding: 1px 5px;
+}

@@ -4,9 +4,9 @@
     performance — it is async and heavy when applied to hundreds of rows. */
 export function renderInlineMarkdown(text: string): string {
   let s = text
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 
   // Protect inline code so its contents are not touched by the other rules
   const codes: string[] = [];

@@ -1,0 +1,93 @@
+/* === day-content.css: Day groups, titles, done section on day slides === */
+
+.tv-day-slide .tv-day-group-title {
+  padding-left: 16px;
+}
+
+.tv-day-group-name {
+  cursor: pointer;
+  transition: color 120ms ease;
+}
+
+.tv-day-group-name:hover {
+  color: var(--interactive-accent);
+  text-decoration: underline;
+}
+
+.tv-day-group-today {
+  margin-left: 8px;
+  font-size: 0.7em;
+  font-weight: 500;
+  color: var(--interactive-accent);
+  background: var(--tag-background);
+  border-radius: 4px;
+  padding: 1px 6px;
+  vertical-align: middle;
+}
+
+.tv-day-group-tasks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 4px;
+}
+
+.tv-day-done-section {
+  position: relative;
+  margin-top: 6px;
+  padding: 0 6px;
+}
+
+.tv-day-done-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--background-modifier-border);
+  margin: 0;
+  pointer-events: none;
+}
+
+.tv-day-done-section.is-empty {
+  display: none;
+}
+
+.tv-day-done-title {
+  font-size: 1.45em;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-normal);
+  padding: 6px 10px 4px;
+}
+
+.tv-day-done-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0 8px;
+}
+
+.tv-day-num-group {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.tv-day-num-big {
+  font-size: 2.4em;
+  font-weight: 900;
+}
+
+.tv-day-slide .tv-day-head .tv-day-weekday {
+  font-size: 1.7em;
+  font-weight: 800;
+  text-transform: capitalize;
+  color: var(--text-normal);
+}
+
+.tv-day-month {
+  font-size: 1.05em;
+  font-weight: 600;
+  color: var(--text-normal);
+}

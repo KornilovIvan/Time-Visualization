@@ -45,8 +45,8 @@ export function showTaskMenu(
   view.taskMenuAnchor = anchor;
 
   const popup = createDiv();
-  popup.className = "be-task-menu-popup";
-  const item = popup.createDiv({ cls: "be-task-menu-item" });
+  popup.className = "tv-task-menu-popup";
+  const item = popup.createDiv({ cls: "tv-task-menu-item" });
   setIcon(item, "pencil");
   item.createSpan({ text: "Edit" });
   item.addEventListener("click", (ev) => {
@@ -55,7 +55,7 @@ export function showTaskMenu(
     startEditTask(view, row, t);
   });
 
-  const itemMove = popup.createDiv({ cls: "be-task-menu-item" });
+  const itemMove = popup.createDiv({ cls: "tv-task-menu-item" });
   setIcon(itemMove, "arrow-right");
   itemMove.createSpan({ text: "Move to next day" });
   itemMove.addEventListener("click", (ev) => {
@@ -105,10 +105,10 @@ export function moveTaskToNextDay(view: ViewHost, row: HTMLElement, t: ParsedTas
   const next = addDays(parseDate(t.date), 1);
   const nextKey = formatDate(next);
 
-  const group = row.closest(".be-day-group") as HTMLElement | null;
-  const groupTasks = group?.querySelector(".be-day-group-tasks");
+  const group = row.closest(".tv-day-group") as HTMLElement | null;
+  const groupTasks = group?.querySelector(".tv-day-group-tasks");
   const isLast = !!groupTasks && groupTasks.childElementCount === 1;
-  const slide = row.closest(".be-day-slide") as HTMLElement | null;
+  const slide = row.closest(".tv-day-slide") as HTMLElement | null;
 
   // Flight first: the row keeps its place in the layout, so no synchronous
   // reflow happens while it flies (a mid-flight layout change was what caused
@@ -161,7 +161,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   anchor.addClass("is-open");
 
   const popup = createDiv();
-  popup.className = "be-task-menu-popup be-priority-popup";
+  popup.className = "tv-task-menu-popup tv-priority-popup";
 
   // Groups currently in this day, in their displayed (sorted) order
   const tasks = view.index.getTasks(dateKey);
@@ -175,7 +175,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
       label: fileName(p),
       isGlobal: hasGlobalPriority(priorities, p),
     })),
-    rowClass: "be-task-menu-item",
+    rowClass: "tv-task-menu-item",
     tipText: order.length > 0 ? "Use the arrows to reorder priority" : undefined,
     emptyText: order.length === 0 ? "No open groups in this day" : undefined,
     setIndexAttr: true,

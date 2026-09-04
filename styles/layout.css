@@ -1,0 +1,107 @@
+/* === layout.css: View shell: root, header, controls, stage === */
+
+.tv-root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 4px 16px 8px;
+  gap: 6px;
+  box-sizing: border-box;
+  outline: none;
+  /* All text in the view is selectable (task text, group names, dates) */
+  user-select: text;
+}
+
+.tv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tv-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tv-nav {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: var(--background-modifier-border);
+  color: var(--text-normal);
+  cursor: pointer;
+  border: none;
+  font-size: 0.9em;
+  transition: background 120ms ease, transform 120ms ease;
+}
+
+.tv-btn:hover {
+  background: var(--background-modifier-border-hover);
+}
+
+.tv-btn:active {
+  transform: scale(0.95);
+}
+
+.tv-today {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.tv-today:hover {
+  background: var(--interactive-accent-hover);
+}
+
+.tv-levels {
+  display: flex;
+  gap: 4px;
+  padding: 3px;
+  background: var(--background-modifier-border);
+  border-radius: 8px;
+}
+
+.tv-level {
+  padding: 4px 12px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.tv-level:hover {
+  color: var(--text-normal);
+}
+
+.tv-level.is-active {
+  background: var(--background-primary);
+  color: var(--text-normal);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.tv-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.tv-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
