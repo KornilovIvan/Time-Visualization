@@ -33,4 +33,8 @@ export interface ViewHost {
   isSelectionClick(e: MouseEvent): boolean;
   suppressRerender(ms: number): void;
   refillCurrent(): void;
+  /** Open the ⋯ task menu (wired by the view to avoid taskRow → menus imports). */
+  openTaskMenu(anchor: HTMLElement, row: HTMLElement, t: ParsedTask): void;
+  /** Open the day-header priority menu (wired by the view). */
+  openDayPriorityMenu(anchor: HTMLElement, dateKey: string): void;
 }

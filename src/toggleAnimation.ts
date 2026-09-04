@@ -1,6 +1,6 @@
 import type { ParsedTask } from "./parser";
 import type { ViewHost } from "./viewHost";
-import { createTaskGroup } from "./taskRow";
+import { createTaskGroup } from "./taskGroup";
 
 export function fadeIn(el: HTMLElement, duration: number): void {
   el.animate(

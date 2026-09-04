@@ -6,6 +6,7 @@ import type { ViewHost } from "./viewHost";
 import { sortedGroupPaths, startEditTask, hasGlobalPriority } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
+import { moveTask } from "./taskWriter";
 
 export function closeTaskMenu(view: ViewHost): void {
   if (view.taskMenu) {
@@ -133,7 +134,7 @@ export function moveTaskToNextDay(view: ViewHost, row: HTMLElement, t: ParsedTas
     } else {
       row.remove();
     }
-    void view.index.moveTask(t, nextKey).catch(() => {
+    void moveTask(view.plugin, t, nextKey).catch(() => {
       /* on error the index/render will show the actual state */
     });
   };

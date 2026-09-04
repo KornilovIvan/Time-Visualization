@@ -14,6 +14,8 @@ import {
   renderCarousel,
 } from "./carousel";
 import { applyTaskToggled } from "./toggleAnimation";
+import { showDayPriorityMenu, showTaskMenu } from "./menus";
+import { toggleTask } from "./taskWriter";
 
 export { VIEW_TYPE, type Level } from "./viewHost";
 
@@ -119,6 +121,14 @@ export class TimeVisualizationView extends ItemView {
       const key = slide.dataset.key;
       if (key) meta.fill(slide, key);
     }
+  }
+
+  openTaskMenu(anchor: HTMLElement, row: HTMLElement, t: ParsedTask): void {
+    showTaskMenu(this, anchor, row, t);
+  }
+
+  openDayPriorityMenu(anchor: HTMLElement, dateKey: string): void {
+    showDayPriorityMenu(this, anchor, dateKey);
   }
 
   private onFileChanged(path: string): void {
@@ -317,7 +327,7 @@ export class TimeVisualizationView extends ItemView {
     applyTaskToggled(this, taskEl, box, t);
     // The file write runs in parallel; the modify event must not re-render mid-animation
     this.suppressRerender(3000);
-    void this.index.toggleTask(t).catch(() => {
+    void toggleTask(this.plugin, t).catch(() => {
       applyTaskToggled(this, taskEl, box, t);
     });
   }

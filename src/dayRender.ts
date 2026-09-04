@@ -12,7 +12,6 @@ import {
   groupTasksByFile,
   sortedGroups,
 } from "./taskRow";
-import { showDayPriorityMenu } from "./menus";
 
 /** Week slide: 7 day columns with tasks */
 export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date): void {
@@ -134,7 +133,7 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
   prioBtn.addEventListener("click", (e) => {
     e.stopPropagation();
     e.preventDefault();
-    showDayPriorityMenu(view, prioBtn, formatDate(day));
+    view.openDayPriorityMenu(prioBtn, formatDate(day));
   });
 
   fillDayBody(view, card, day, false);
