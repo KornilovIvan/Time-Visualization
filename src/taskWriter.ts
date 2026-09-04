@@ -4,26 +4,48 @@ import type { ParsedTask } from "./parser";
 
 /** File writes for tasks. Kept separate from TaskIndex (read/cache only). */
 
-export async function toggleTask(
+/** Outcome of a task file write — silent no-ops are not used. */
+export type TaskWriteResult =
+  | { ok: true }
+  | {
+      ok: false;
+      /** not-found: file gone; stale-line: line missing or no longer a matching task;
+          unsupported: format cannot be rewritten (e.g. custom move). */
+      reason: "not-found" | "stale-line" | "unsupported";
+    };
+
+const OK: TaskWriteResult = { ok: true };
+
+async function readTaskLines(
   plugin: TimeVisualizationPlugin,
   task: ParsedTask
-): Promise<void> {
+): Promise<{ file: TFile; lines: string[]; line: string } | TaskWriteResult> {
   const file = plugin.app.vault.getAbstractFileByPath(task.filePath);
-  if (!(file instanceof TFile)) return;
+  if (!(file instanceof TFile)) return { ok: false, reason: "not-found" };
   const content = await plugin.app.vault.read(file);
   const lines = content.split("\n");
   const line = lines[task.line];
-  if (!line) return;
+  if (line === undefined) return { ok: false, reason: "stale-line" };
+  return { file, lines, line };
+}
+
+export async function toggleTask(
+  plugin: TimeVisualizationPlugin,
+  task: ParsedTask
+): Promise<TaskWriteResult> {
+  const loaded = await readTaskLines(plugin, task);
+  if (!("file" in loaded)) return loaded;
+  const { file, lines, line } = loaded;
 
   const re = /^(\s*(?:>\s*)*[-*])\s+\[[ xX]\]/;
   const m = re.exec(line);
-  if (!m) return;
+  if (!m) return { ok: false, reason: "stale-line" };
 
   // Read the current status from the line itself, not from the task object
   const checked = /\[[xX]\]/.test(m[0]);
   lines[task.line] = checked
-    ? line.replace(re, (mm, pre) => `${pre} [ ]`)
-    : line.replace(re, (mm, pre) => `${pre} [x]`);
+    ? line.replace(re, (_mm, pre: string) => `${pre} [ ]`)
+    : line.replace(re, (_mm, pre: string) => `${pre} [x]`);
 
   // Only touch the [done::] marker if the setting is on; otherwise the line
   // is modified solely for the checkbox
@@ -65,6 +87,7 @@ export async function toggleTask(
   }
 
   await plugin.app.vault.modify(file, lines.join("\n"));
+  return OK;
 }
 
 /** Moves a task to another date, preserving the format it was parsed with.
@@ -73,13 +96,14 @@ export async function moveTask(
   plugin: TimeVisualizationPlugin,
   task: ParsedTask,
   newDate: string
-): Promise<void> {
-  const file = plugin.app.vault.getAbstractFileByPath(task.filePath);
-  if (!(file instanceof TFile)) return;
-  const content = await plugin.app.vault.read(file);
-  const lines = content.split("\n");
-  const line = lines[task.line];
-  if (!line) return;
+): Promise<TaskWriteResult> {
+  if (task.format === "custom") {
+    return { ok: false, reason: "unsupported" };
+  }
+
+  const loaded = await readTaskLines(plugin, task);
+  if (!("file" in loaded)) return loaded;
+  const { file, lines, line } = loaded;
 
   if (task.format === "tasks") {
     const dateRe = /📅\s*\d{4}-\d{2}-\d{2}/;
@@ -88,8 +112,6 @@ export async function moveTask(
     } else {
       lines[task.line] = line.trimEnd() + ` 📅 ${newDate}`;
     }
-  } else if (task.format === "custom") {
-    return; // custom regex — no reliable way to rewrite the date
   } else {
     const dateRe = /\[date::\s*[^\]]*\]/;
     if (dateRe.test(line)) {
@@ -100,6 +122,7 @@ export async function moveTask(
   }
 
   await plugin.app.vault.modify(file, lines.join("\n"));
+  return OK;
 }
 
 /** Rewrites the task text, preserving the quote prefix, checkbox status, tags
@@ -108,17 +131,14 @@ export async function updateTaskText(
   plugin: TimeVisualizationPlugin,
   task: ParsedTask,
   newText: string
-): Promise<void> {
-  const file = plugin.app.vault.getAbstractFileByPath(task.filePath);
-  if (!(file instanceof TFile)) return;
-  const content = await plugin.app.vault.read(file);
-  const lines = content.split("\n");
-  const line = lines[task.line];
-  if (!line) return;
+): Promise<TaskWriteResult> {
+  const loaded = await readTaskLines(plugin, task);
+  if (!("file" in loaded)) return loaded;
+  const { file, lines, line } = loaded;
 
   const re = /^(\s*(?:>\s*)*[-*])\s+\[([ xX])\](\s+.*)?$/;
   const m = re.exec(line);
-  if (!m) return;
+  if (!m) return { ok: false, reason: "stale-line" };
   const leading = m[1];
   const checked = m[2].toLowerCase() === "x";
 
@@ -150,4 +170,5 @@ export async function updateTaskText(
     `${leading} [${checked ? "x" : " "}] ${text}${tagsPart}${datePart}${timePart}${donePart}`;
 
   await plugin.app.vault.modify(file, lines.join("\n"));
+  return OK;
 }

@@ -3,10 +3,11 @@ import type { ParsedTask } from "./parser";
 import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
 import type { ViewHost } from "./viewHost";
-import { sortedGroupPaths, startEditTask, hasGlobalPriority } from "./taskRow";
+import { startEditTask } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
 import { moveTask } from "./taskWriter";
+import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
 
 export function closeTaskMenu(view: ViewHost): void {
   if (view.taskMenu) {
@@ -134,8 +135,10 @@ export function moveTaskToNextDay(view: ViewHost, row: HTMLElement, t: ParsedTas
     } else {
       row.remove();
     }
-    void moveTask(view.plugin, t, nextKey).catch(() => {
-      /* on error the index/render will show the actual state */
+    void moveTask(view.plugin, t, nextKey).then((r) => {
+      if (!r.ok) view.refillCurrent();
+    }).catch(() => {
+      view.refillCurrent();
     });
   };
   window.setTimeout(lift, 750);
@@ -167,7 +170,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   // Groups currently in this day, in their displayed (sorted) order
   const tasks = view.index.getTasks(dateKey);
   const active = tasks.filter((t) => !t.checked);
-  const order = sortedGroupPaths(view, active, dateKey);
+  const order = sortedGroupPaths(view.plugin.settings, active, dateKey);
   const priorities = view.plugin.settings.priorities;
 
   mountPriorityList(popup, {

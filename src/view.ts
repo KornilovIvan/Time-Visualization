@@ -327,7 +327,9 @@ export class TimeVisualizationView extends ItemView {
     applyTaskToggled(this, taskEl, box, t);
     // The file write runs in parallel; the modify event must not re-render mid-animation
     this.suppressRerender(3000);
-    void toggleTask(this.plugin, t).catch(() => {
+    void toggleTask(this.plugin, t).then((r) => {
+      if (!r.ok) applyTaskToggled(this, taskEl, box, t);
+    }).catch(() => {
       applyTaskToggled(this, taskEl, box, t);
     });
   }

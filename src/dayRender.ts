@@ -6,12 +6,8 @@ import {
   isoWeekNumber,
 } from "./dates";
 import type { ViewHost } from "./viewHost";
-import {
-  buildCollapsedGroup,
-  fillGroup,
-  groupTasksByFile,
-  sortedGroups,
-} from "./taskRow";
+import { buildCollapsedGroup, fillGroup } from "./taskRow";
+import { groupTasksByFile, sortedGroups } from "./taskSort";
 
 /** Week slide: 7 day columns with tasks */
 export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date): void {
@@ -158,7 +154,7 @@ export function fillDayBody(
     list.classList.add("tv-hidden");
   } else {
     list.createDiv({ cls: "tv-day-active-title", text: "Open tasks" });
-    for (const g of sortedGroups(view, active, key)) {
+    for (const g of sortedGroups(view.plugin.settings, active, key)) {
       // null timed = merged adjacent buckets — one header, no data-timed marker
       const bucket = g.timed === null ? undefined : g.timed;
       if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, compact, "active", bucket);
