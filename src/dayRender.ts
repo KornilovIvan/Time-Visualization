@@ -159,9 +159,11 @@ export function fillDayBody(
     list.classList.add("be-hidden");
   } else {
     list.createDiv({ cls: "be-day-active-title", text: "Open tasks" });
-    for (const [path, gt] of sortedGroups(view, active, key)) {
-      if (collapsible) buildCollapsedGroup(view, list, gt, path, key, compact, "active");
-      else fillGroup(view, list, gt, path, key, compact);
+    for (const g of sortedGroups(view, active, key)) {
+      // null timed = merged adjacent buckets — one header, no data-timed marker
+      const bucket = g.timed === null ? undefined : g.timed;
+      if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, compact, "active", bucket);
+      else fillGroup(view, list, g.tasks, g.path, key, compact, bucket);
     }
   }
 

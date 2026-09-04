@@ -113,10 +113,13 @@ export function applyTaskToggled(
 
   const mutate = (): void => {
     const esc = t.filePath.replace(/"/g, '\\"');
+    const timed = !!t.time;
+    const timedSel = `[data-timed="${timed ? "1" : "0"}"]`;
     if (slide && t.checked) {
       const activeGroup = row.closest(".be-day-group") as HTMLElement | null;
       const doneList = slide.querySelector(".be-day-done-list") as HTMLElement | null;
       if (doneList) {
+        // Done section stays grouped by note only (no timed split)
         let doneGroup = doneList.querySelector<HTMLElement>(".be-day-group[data-file=\"" + esc + "\"]");
         const isLastInGroup =
           !!activeGroup &&
@@ -124,6 +127,7 @@ export function applyTaskToggled(
 
         if (!doneGroup && activeGroup && isLastInGroup) {
           // The whole group (header + task) moves to Done as one block
+          delete activeGroup.dataset.timed;
           doneList.appendChild(activeGroup);
           ensureDoneVisible(slide);
         } else {
@@ -156,20 +160,34 @@ export function applyTaskToggled(
       }
       syncActiveSection(slide);
     } else if (slide && !t.checked) {
-      // Return to active: into its note's group at the original position
+      // Return to active: into the matching timed/untimed subgroup for this note
       const doneGroup = row.closest(".be-day-group") as HTMLElement | null;
       const doneGroupTop = doneGroup ? doneGroup.getBoundingClientRect().top : 0;
       const activeList = slide.querySelector(".be-day-list") as HTMLElement | null;
       if (activeList) {
-        let group = activeList.querySelector<HTMLElement>(".be-day-group[data-file=\"" + esc + "\"]");
+        // Prefer the matching timed/untimed bucket; else a merged group (no data-timed)
+        let group =
+          activeList.querySelector<HTMLElement>(
+            ".be-day-group[data-file=\"" + esc + "\"]" + timedSel
+          ) ??
+          activeList.querySelector<HTMLElement>(
+            ".be-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
+          );
         let createdGroup = false;
         if (!group) {
-          group = createTaskGroup(view, activeList, t.filePath, slide?.dataset.key);
-          // Insert the group alphabetically by note name
+          group = createTaskGroup(view, activeList, t.filePath, slide?.dataset.key, timed);
+          // Insert among siblings: by note path, timed subgroup before untimed
           const groups = Array.from(activeList.querySelectorAll<HTMLElement>(".be-day-group"));
           let before: HTMLElement | null = null;
           for (const g of groups) {
-            if ((g.dataset.file || "").localeCompare(t.filePath) > 0) {
+            if (g === group) continue;
+            const gf = g.dataset.file || "";
+            const cmp = gf.localeCompare(t.filePath);
+            if (cmp > 0) {
+              before = g;
+              break;
+            }
+            if (cmp === 0 && timed && g.dataset.timed === "0") {
               before = g;
               break;
             }

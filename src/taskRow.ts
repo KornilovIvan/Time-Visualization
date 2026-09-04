@@ -19,6 +19,46 @@ export function groupTasksByFile(tasks: ParsedTask[]): Map<string, ParsedTask[]>
   return groups;
 }
 
+/** One display group: tasks from a note, optionally split into timed / untimed. */
+export interface TaskGroup {
+  path: string;
+  tasks: ParsedTask[];
+  /**
+   * true = timed-only bucket, false = untimed-only,
+   * null = merged adjacent buckets from the same note (no data-timed marker).
+   */
+  timed: boolean | null;
+}
+
+/** Split each note into timed and untimed subgroups (a note may yield 0–2 groups). */
+export function splitTimedGroups(tasks: ParsedTask[]): TaskGroup[] {
+  const out: TaskGroup[] = [];
+  for (const [path, list] of groupTasksByFile(tasks)) {
+    const timed = list.filter((t) => !!t.time);
+    const untimed = list.filter((t) => !t.time);
+    if (timed.length > 0) out.push({ path, tasks: timed, timed: true });
+    if (untimed.length > 0) out.push({ path, tasks: untimed, timed: false });
+  }
+  return out;
+}
+
+/** Merge consecutive subgroups of the same note into one visual group.
+    Keeps them split when another note sits between (e.g. after time-first sort). */
+export function mergeAdjacentSameNoteGroups(groups: TaskGroup[]): TaskGroup[] {
+  if (groups.length === 0) return groups;
+  const out: TaskGroup[] = [];
+  for (const g of groups) {
+    const prev = out[out.length - 1];
+    if (prev && prev.path === g.path) {
+      prev.tasks = prev.tasks.concat(g.tasks);
+      prev.timed = null;
+    } else {
+      out.push({ path: g.path, tasks: g.tasks.slice(), timed: g.timed });
+    }
+  }
+  return out;
+}
+
 /** Whether a priority entry (note or folder) covers this note path.
     Folders match themselves and any path under them (same rule as Sources). */
 export function priorityEntryMatches(entry: string, notePath: string): boolean {
@@ -43,45 +83,58 @@ export function hasGlobalPriority(priorities: string[], notePath: string): boole
 }
 
 /** Groups sorted by priority: per-day order first, then the global priority
-    list, then unprioritized groups in their by-time order. When the
-    "time over priority" setting is on, groups with timed tasks always come
-    first regardless of the global priority list. */
+    list, then unprioritized groups in their by-time order. Timed and untimed
+    tasks from the same note are separate buckets for sorting; adjacent buckets
+    of the same note are merged for display. When "time over priority" is on,
+    every timed subgroup sorts above every untimed one. */
 export function sortedGroups(
   view: ViewHost,
   tasks: ParsedTask[],
   dateKey: string
-): Array<[string, ParsedTask[]]> {
-  const groups = groupTasksByFile(tasks);
+): TaskGroup[] {
+  const groups = splitTimedGroups(tasks);
   const day = view.plugin.settings.dayOrder[dateKey] ?? [];
   const dayPos = new Map<string, number>();
-  day.forEach((p, i) => {
-    if (groups.has(p)) dayPos.set(p, i);
-  });
+  day.forEach((p, i) => dayPos.set(p, i));
   const priorities = view.plugin.settings.priorities;
-  const hasTime = (path: string): boolean => {
-    const arr = groups.get(path);
-    return !!arr && arr.some((t) => !!t.time);
-  };
   const timeFirst = view.plugin.settings.timeOverPriority;
-  return Array.from(groups.entries()).sort((a, b) => {
-    if (timeFirst) {
-      const at = hasTime(a[0]);
-      const bt = hasTime(b[0]);
-      if (at !== bt) return at ? -1 : 1;
-    }
-    const ad = dayPos.get(a[0]);
-    const bd = dayPos.get(b[0]);
-    if (ad !== undefined && bd !== undefined) return ad - bd;
-    if (ad !== undefined) return -1;
-    if (bd !== undefined) return 1;
-    const ag = globalPriorityIndex(priorities, a[0]);
-    const bg = globalPriorityIndex(priorities, b[0]);
-    if (ag !== undefined && bg !== undefined) return ag - bg;
-    if (ag !== undefined) return -1;
-    if (bg !== undefined) return 1;
+  groups.sort((a, b) => {
+    const aTimed = a.timed === true;
+    const bTimed = b.timed === true;
+    if (timeFirst && aTimed !== bTimed) return aTimed ? -1 : 1;
+    const ad = dayPos.get(a.path);
+    const bd = dayPos.get(b.path);
+    if (ad !== undefined && bd !== undefined && ad !== bd) return ad - bd;
+    if (ad !== undefined && bd === undefined) return -1;
+    if (bd !== undefined && ad === undefined) return 1;
+    const ag = globalPriorityIndex(priorities, a.path);
+    const bg = globalPriorityIndex(priorities, b.path);
+    if (ag !== undefined && bg !== undefined && ag !== bg) return ag - bg;
+    if (ag !== undefined && bg === undefined) return -1;
+    if (bg !== undefined && ag === undefined) return 1;
+    // Same note: timed subgroup above untimed
+    if (a.path === b.path && a.timed !== b.timed) return aTimed ? -1 : 1;
     return 0; // stable sort keeps the existing by-time order
   });
+  return mergeAdjacentSameNoteGroups(groups);
 }
+
+/** Unique note paths in display order (for the day priority menu). */
+export function sortedGroupPaths(
+  view: ViewHost,
+  tasks: ParsedTask[],
+  dateKey: string
+): string[] {
+  const paths: string[] = [];
+  const seen = new Set<string>();
+  for (const g of sortedGroups(view, tasks, dateKey)) {
+    if (seen.has(g.path)) continue;
+    seen.add(g.path);
+    paths.push(g.path);
+  }
+  return paths;
+}
+
 
 export function openNote(view: ViewHost, path: string): void {
   const file = view.app.vault.getAbstractFileByPath(path);
@@ -128,10 +181,13 @@ export function createTaskGroup(
   view: ViewHost,
   container: HTMLElement,
   path: string,
-  dayKey?: string
+  dayKey?: string,
+  /** When set, marks an active timed/untimed subgroup (done groups omit this). */
+  timed?: boolean
 ): HTMLElement {
   const group = container.createDiv({ cls: "be-day-group" });
   group.dataset.file = path;
+  if (timed !== undefined) group.dataset.timed = timed ? "1" : "0";
   makeGroupTitle(view, group, path, dayKey);
   group.createDiv({ cls: "be-day-group-tasks" });
   return group;
@@ -143,9 +199,10 @@ export function fillGroup(
   tasks: ParsedTask[],
   path: string,
   key: string,
-  compact: boolean
+  compact: boolean,
+  timed?: boolean
 ): void {
-  const group = createTaskGroup(view, container, path, key);
+  const group = createTaskGroup(view, container, path, key, timed);
   const gl = group.querySelector(".be-day-group-tasks") as HTMLElement;
   for (const t of tasks) gl.appendChild(buildTaskRow(view, t, compact));
 }
@@ -159,12 +216,14 @@ export function buildCollapsedGroup(
   path: string,
   key: string,
   compact: boolean,
-  section: "active" | "done"
+  section: "active" | "done",
+  timed?: boolean
 ): HTMLElement {
   const group = container.createDiv({ cls: "be-day-group is-collapsed" });
   group.dataset.file = path;
   group.dataset.day = key;
   group.dataset.section = section;
+  if (timed !== undefined) group.dataset.timed = timed ? "1" : "0";
 
   // makeGroupTitle is not used: in the collapsed state the name must not be a
   // link (CSS sets its pointer-events to none)
@@ -187,9 +246,16 @@ export function buildCollapsedGroup(
       const dayKey = group.dataset.day ?? key;
       const fPath = group.dataset.file ?? path;
       const sec = (group.dataset.section as "active" | "done") ?? section;
+      const wantTimed = group.dataset.timed;
       const fresh = view.index
         .getTasks(dayKey)
-        .filter((t) => t.filePath === fPath && (sec === "done" ? t.checked : !t.checked));
+        .filter((t) => {
+          if (t.filePath !== fPath) return false;
+          if (sec === "done" ? !t.checked : t.checked) return false;
+          if (wantTimed === "1") return !!t.time;
+          if (wantTimed === "0") return !t.time;
+          return true;
+        });
       for (const t of fresh) gl.appendChild(buildTaskRow(view, t, compact));
     }
   });

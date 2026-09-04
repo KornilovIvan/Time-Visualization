@@ -3,7 +3,7 @@ import type { ParsedTask } from "./parser";
 import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
 import type { ViewHost } from "./viewHost";
-import { sortedGroups, startEditTask, hasGlobalPriority } from "./taskRow";
+import { sortedGroupPaths, startEditTask, hasGlobalPriority } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
 
@@ -166,7 +166,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   // Groups currently in this day, in their displayed (sorted) order
   const tasks = view.index.getTasks(dateKey);
   const active = tasks.filter((t) => !t.checked);
-  const order = sortedGroups(view, active, dateKey).map(([p]) => p);
+  const order = sortedGroupPaths(view, active, dateKey);
   const priorities = view.plugin.settings.priorities;
 
   mountPriorityList(popup, {
