@@ -83,6 +83,48 @@ export function hasGlobalPriority(priorities: string[], notePath: string): boole
   return globalPriorityIndex(priorities, notePath) !== undefined;
 }
 
+/** Minimal identity of a display group for ordering (matches data-timed on DOM). */
+export interface GroupSortKey {
+  path: string;
+  /** true = timed bucket, false = untimed, null = merged (no data-timed). */
+  timed: boolean | null;
+}
+
+/** Same ordering rules as sortedGroups — used for DOM reinsert on un-toggle. */
+export function compareGroups(
+  a: GroupSortKey,
+  b: GroupSortKey,
+  settings: TaskSortSettings,
+  dateKey: string
+): number {
+  const aTimed = a.timed === true;
+  const bTimed = b.timed === true;
+  if (settings.timeOverPriority && aTimed !== bTimed) return aTimed ? -1 : 1;
+  const day = settings.dayOrder[dateKey] ?? [];
+  const ad = day.indexOf(a.path);
+  const bd = day.indexOf(b.path);
+  if (ad !== -1 && bd !== -1 && ad !== bd) return ad - bd;
+  if (ad !== -1 && bd === -1) return -1;
+  if (bd !== -1 && ad === -1) return 1;
+  const ag = globalPriorityIndex(settings.priorities, a.path);
+  const bg = globalPriorityIndex(settings.priorities, b.path);
+  if (ag !== undefined && bg !== undefined && ag !== bg) return ag - bg;
+  if (ag !== undefined && bg === undefined) return -1;
+  if (bg !== undefined && ag === undefined) return 1;
+  // Same note: timed subgroup above untimed (null counts as neither exclusive)
+  if (a.path === b.path && a.timed !== b.timed) {
+    if (a.timed === true) return -1;
+    if (b.timed === true) return 1;
+    if (a.timed === false) return 1;
+    if (b.timed === false) return -1;
+  }
+  return 0;
+}
+
+function groupTimedFlag(g: TaskGroup): boolean | null {
+  return g.timed;
+}
+
 /** Groups sorted by priority: per-day order first, then the global priority
     list, then unprioritized groups in their by-time order. Timed and untimed
     tasks from the same note are separate buckets for sorting; adjacent buckets
@@ -94,29 +136,14 @@ export function sortedGroups(
   dateKey: string
 ): TaskGroup[] {
   const groups = splitTimedGroups(tasks);
-  const day = settings.dayOrder[dateKey] ?? [];
-  const dayPos = new Map<string, number>();
-  day.forEach((p, i) => dayPos.set(p, i));
-  const priorities = settings.priorities;
-  const timeFirst = settings.timeOverPriority;
-  groups.sort((a, b) => {
-    const aTimed = a.timed === true;
-    const bTimed = b.timed === true;
-    if (timeFirst && aTimed !== bTimed) return aTimed ? -1 : 1;
-    const ad = dayPos.get(a.path);
-    const bd = dayPos.get(b.path);
-    if (ad !== undefined && bd !== undefined && ad !== bd) return ad - bd;
-    if (ad !== undefined && bd === undefined) return -1;
-    if (bd !== undefined && ad === undefined) return 1;
-    const ag = globalPriorityIndex(priorities, a.path);
-    const bg = globalPriorityIndex(priorities, b.path);
-    if (ag !== undefined && bg !== undefined && ag !== bg) return ag - bg;
-    if (ag !== undefined && bg === undefined) return -1;
-    if (bg !== undefined && ag === undefined) return 1;
-    // Same note: timed subgroup above untimed
-    if (a.path === b.path && a.timed !== b.timed) return aTimed ? -1 : 1;
-    return 0; // stable sort keeps the existing by-time order
-  });
+  groups.sort((a, b) =>
+    compareGroups(
+      { path: a.path, timed: groupTimedFlag(a) },
+      { path: b.path, timed: groupTimedFlag(b) },
+      settings,
+      dateKey
+    )
+  );
   return mergeAdjacentSameNoteGroups(groups);
 }
 
@@ -134,4 +161,30 @@ export function sortedGroupPaths(
     paths.push(g.path);
   }
   return paths;
+}
+
+/** Read timed flag from a rendered .tv-day-group element. */
+export function groupTimedFromEl(el: HTMLElement): boolean | null {
+  if (el.dataset.timed === "1") return true;
+  if (el.dataset.timed === "0") return false;
+  return null;
+}
+
+/** First sibling group that should come after `key`, or null to append. */
+export function findGroupInsertBefore(
+  siblings: HTMLElement[],
+  key: GroupSortKey,
+  settings: TaskSortSettings,
+  dateKey: string,
+  skip?: HTMLElement
+): HTMLElement | null {
+  for (const g of siblings) {
+    if (g === skip) continue;
+    const other: GroupSortKey = {
+      path: g.dataset.file || "",
+      timed: groupTimedFromEl(g),
+    };
+    if (compareGroups(key, other, settings, dateKey) < 0) return g;
+  }
+  return null;
 }

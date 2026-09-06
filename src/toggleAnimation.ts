@@ -1,6 +1,7 @@
 import type { ParsedTask } from "./parser";
 import type { ViewHost } from "./viewHost";
 import { createTaskGroup } from "./taskGroup";
+import { findGroupInsertBefore } from "./taskSort";
 
 export function fadeIn(el: HTMLElement, duration: number): void {
   el.animate(
@@ -165,41 +166,69 @@ export function applyTaskToggled(
       const doneGroupTop = doneGroup ? doneGroup.getBoundingClientRect().top : 0;
       const activeList = slide.querySelector(".tv-day-list") as HTMLElement | null;
       if (activeList) {
-        // Prefer the matching timed/untimed bucket; else a merged group (no data-timed)
-        let group =
-          activeList.querySelector<HTMLElement>(
-            ".tv-day-group[data-file=\"" + esc + "\"]" + timedSel
-          ) ??
-          activeList.querySelector<HTMLElement>(
+        // Prefer the matching timed/untimed bucket. Timed tasks must not fall
+        // into a merged (no data-timed) group — that bucket often sits among
+        // untimed notes when "time over priority" is on.
+        let group = activeList.querySelector<HTMLElement>(
+          ".tv-day-group[data-file=\"" + esc + "\"]" + timedSel
+        );
+        if (!group && !timed) {
+          group = activeList.querySelector<HTMLElement>(
             ".tv-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
           );
+        }
         let createdGroup = false;
+        const dateKey = slide.dataset.key ?? "";
+        const settings = view.plugin.settings;
         if (!group) {
-          group = createTaskGroup(view, activeList, t.filePath, slide?.dataset.key, timed);
-          // Insert among siblings: by note path, timed subgroup before untimed
-          const groups = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
-          let before: HTMLElement | null = null;
-          for (const g of groups) {
-            if (g === group) continue;
-            const gf = g.dataset.file || "";
-            const cmp = gf.localeCompare(t.filePath);
-            if (cmp > 0) {
-              before = g;
-              break;
-            }
-            if (cmp === 0 && timed && g.dataset.timed === "0") {
-              before = g;
-              break;
-            }
-          }
+          group = createTaskGroup(view, activeList, t.filePath, dateKey, timed);
+          // Same order as sortedGroups (timeOverPriority / dayOrder / priorities)
+          const siblings = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
+          const before = findGroupInsertBefore(
+            siblings,
+            { path: t.filePath, timed },
+            settings,
+            dateKey,
+            group
+          );
           activeList.insertBefore(group, before);
           createdGroup = true;
+        } else {
+          // Existing bucket may sit in the wrong section after other toggles —
+          // re-place it with the same sort rules before inserting the row
+          const siblings = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
+          const before = findGroupInsertBefore(
+            siblings,
+            { path: t.filePath, timed: group.dataset.timed === "1" ? true : group.dataset.timed === "0" ? false : null },
+            settings,
+            dateKey,
+            group
+          );
+          if (before !== group.nextElementSibling) {
+            activeList.insertBefore(group, before);
+          }
         }
         const tasksEl = group.querySelector(".tv-day-group-tasks") as HTMLElement | null;
         if (tasksEl) {
           let insertBefore: HTMLElement | null = null;
           for (const child of Array.from(tasksEl.children) as HTMLElement[]) {
-            const line = parseInt(child.dataset.taskKey?.split(":")[1] ?? "999999", 10);
+            const otherKey = child.dataset.taskKey;
+            const other = otherKey ? view.taskRefs.get(otherKey) : undefined;
+            if (timed && t.time && other?.time) {
+              if (other.time > t.time) {
+                insertBefore = child;
+                break;
+              }
+              if (other.time === t.time) {
+                const line = parseInt(otherKey?.slice(otherKey.indexOf(":") + 1) ?? "999999", 10);
+                if (line > t.line) {
+                  insertBefore = child;
+                  break;
+                }
+              }
+              continue;
+            }
+            const line = parseInt(otherKey?.slice(otherKey.indexOf(":") + 1) ?? "999999", 10);
             if (line > t.line) {
               insertBefore = child;
               break;
