@@ -3,7 +3,7 @@ import type { ParsedTask } from "./parser";
 import { renderInlineMarkdown } from "./markdown";
 import { fileName } from "./dates";
 import type { ViewHost } from "./viewHost";
-import { attachNoteLink, createTaskGroup } from "./taskGroup";
+import { attachNoteLink, attachInternalLinkHovers, createTaskGroup } from "./taskGroup";
 import { updateTaskText } from "./taskWriter";
 
 export function fillGroup(
@@ -124,6 +124,7 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
   const text = row.createDiv({ cls: "tv-task-text" });
   const textInner = text.createSpan({ cls: "tv-task-inner" });
   textInner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text)));
+  attachInternalLinkHovers(view, textInner);
 
   if (t.time) {
     text.createSpan({ cls: "tv-task-time", text: " " + t.time });
@@ -208,16 +209,22 @@ export function startEditTask(view: ViewHost, row: HTMLElement, t: ParsedTask): 
       window.setTimeout(release, 0);
     }
     if (save && v && v !== t.text) {
-      if (inner) inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(v)));
+      if (inner) {
+        inner.empty();
+        inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(v)));
+        attachInternalLinkHovers(view, inner);
+      }
       void updateTaskText(view.plugin, t, v).then((r) => {
         if (!r.ok && inner) {
           inner.empty();
           inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text)));
+          attachInternalLinkHovers(view, inner);
         }
       }).catch(() => {
         if (inner) {
           inner.empty();
           inner.appendChild(sanitizeHTMLToDom(renderInlineMarkdown(t.text)));
+          attachInternalLinkHovers(view, inner);
         }
       });
     }

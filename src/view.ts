@@ -312,13 +312,19 @@ export class TimeVisualizationView extends ItemView {
     if (!key) return;
     const t = this.taskRefs.get(key);
     if (!t) return;
-    // Clicking a rendered markdown link inside a task must not toggle it
+    // Clicking a rendered link inside a task must open it — not toggle the task
     const link = (e.target as HTMLElement).closest("a");
     if (link) {
       e.stopPropagation();
       e.preventDefault();
-      const href = link.getAttribute("href");
-      if (href) window.open(href, "_blank", "noopener");
+      const internal = link.getAttribute("data-href");
+      if (internal) {
+        const newLeaf = e.metaKey || e.ctrlKey;
+        void this.app.workspace.openLinkText(internal, t.filePath, newLeaf);
+      } else {
+        const href = link.getAttribute("href");
+        if (href && href !== "#") window.open(href, "_blank", "noopener");
+      }
       return;
     }
     e.stopPropagation();

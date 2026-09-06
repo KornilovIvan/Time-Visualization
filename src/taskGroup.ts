@@ -10,6 +10,35 @@ export function openNote(view: ViewHost, path: string): void {
   }
 }
 
+/** Same Page Preview trigger Obsidian uses for internal links / group titles. */
+export function triggerHoverLink(
+  view: ViewHost,
+  targetEl: HTMLElement,
+  linktext: string,
+  event: MouseEvent
+): void {
+  const hoverParent = { hoverPopover: null, dom: view.contentEl } as unknown;
+  view.app.workspace.trigger("hover-link", {
+    event,
+    source: VIEW_TYPE,
+    hoverParent,
+    targetEl,
+    linktext,
+  });
+}
+
+/** Wire Ctrl/Cmd+hover (Page Preview) for rendered internal links in task text. */
+export function attachInternalLinkHovers(view: ViewHost, root: HTMLElement): void {
+  root.querySelectorAll("a.internal-link").forEach((node) => {
+    const a = node as HTMLElement;
+    a.addEventListener("mouseenter", (e) => {
+      const linktext = a.getAttribute("data-href");
+      if (!linktext) return;
+      triggerHoverLink(view, a, linktext, e);
+    });
+  });
+}
+
 export function attachNoteLink(view: ViewHost, name: HTMLElement, path: string): void {
   name.addEventListener("click", (e) => {
     e.stopPropagation();
@@ -17,14 +46,7 @@ export function attachNoteLink(view: ViewHost, name: HTMLElement, path: string):
     openNote(view, path);
   });
   name.addEventListener("mouseenter", (e) => {
-    const hoverParent = { hoverPopover: null, dom: view.contentEl } as unknown;
-    view.app.workspace.trigger("hover-link", {
-      event: e,
-      source: VIEW_TYPE,
-      hoverParent,
-      targetEl: name,
-      linktext: path.replace(/\.md$/i, ""),
-    });
+    triggerHoverLink(view, name, path.replace(/\.md$/i, ""), e);
   });
 }
 
