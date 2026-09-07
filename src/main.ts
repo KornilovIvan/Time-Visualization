@@ -8,6 +8,7 @@ import { TimeVisualizationView, VIEW_TYPE } from "./view";
 import {
   DEFAULT_SETTINGS,
   TimeVisualizationSettingTab,
+  normalizeLoadedSettings,
   type TimeVisualizationSettings,
 } from "./settings";
 
@@ -89,13 +90,7 @@ export default class TimeVisualizationPlugin extends Plugin {
 
   async loadSettings(): Promise<void> {
     const data = await this.loadData() as Partial<TimeVisualizationSettings> | null;
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, data);
-    // Migration: prior versions stored priorities as Record<path, number>;
-    // now it is an ordered array. Any invalid value falls back to an empty
-    // list so the view does not crash on render.
-    if (!Array.isArray(this.settings.priorities)) {
-      this.settings.priorities = [];
-    }
+    this.settings = normalizeLoadedSettings(data);
   }
 
   async saveSettings(): Promise<void> {

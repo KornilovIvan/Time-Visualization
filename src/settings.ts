@@ -45,6 +45,34 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   timeOverPriority: false,
 };
 
+/**
+ * Merge saved plugin data with defaults and coerce legacy / invalid shapes
+ * so the view does not crash on render.
+ */
+export function normalizeLoadedSettings(
+  data: Partial<TimeVisualizationSettings> | null | undefined
+): TimeVisualizationSettings {
+  const settings = Object.assign({}, DEFAULT_SETTINGS, data ?? {});
+  // Migration: prior versions stored priorities as Record<path, number>
+  if (!Array.isArray(settings.priorities)) {
+    settings.priorities = [];
+  }
+  if (
+    !settings.dayOrder ||
+    typeof settings.dayOrder !== "object" ||
+    Array.isArray(settings.dayOrder)
+  ) {
+    settings.dayOrder = {};
+  }
+  if (!Array.isArray(settings.sources)) {
+    settings.sources = [];
+  }
+  if (!Array.isArray(settings.includeTags)) {
+    settings.includeTags = [];
+  }
+  return settings;
+}
+
 export class TimeVisualizationSettingTab extends PluginSettingTab {
   plugin: TimeVisualizationPlugin;
 
