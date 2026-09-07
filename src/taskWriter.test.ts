@@ -61,7 +61,7 @@ afterEach(() => {
 describe("taskWriter results", () => {
   it("returns not-found when the file is missing", async () => {
     const plugin = makePlugin("- [ ] Hi");
-    const t = task({ line: 0, format: "legacy", filePath: "gone.md" });
+    const t = task({ line: 0, format: "legacy", filePath: "gone.md", text: "Hi" });
     expect(await toggleTask(plugin, t)).toEqual({ ok: false, reason: "not-found" });
     expect(await moveTask(plugin, t, "2026-02-01")).toEqual({
       ok: false,
@@ -73,9 +73,14 @@ describe("taskWriter results", () => {
     });
   });
 
-  it("returns stale-line when the line index is out of range", async () => {
-    const plugin = makePlugin("- [ ] Only line");
-    expect(await toggleTask(plugin, task({ line: 5, format: "legacy" }))).toEqual({
+  it("returns stale-line when the task cannot be found", async () => {
+    const plugin = makePlugin("- [ ] Only line |[date:: 2026-01-05]");
+    expect(
+      await toggleTask(
+        plugin,
+        task({ line: 5, format: "legacy", text: "Missing", date: "2026-01-05" })
+      )
+    ).toEqual({
       ok: false,
       reason: "stale-line",
     });
@@ -83,11 +88,15 @@ describe("taskWriter results", () => {
 
   it("returns stale-line when the line is no longer a task", async () => {
     const plugin = makePlugin("not a task");
-    expect(await toggleTask(plugin, task({ line: 0, format: "legacy" }))).toEqual({
+    expect(
+      await toggleTask(plugin, task({ line: 0, format: "legacy", text: "Gone" }))
+    ).toEqual({
       ok: false,
       reason: "stale-line",
     });
-    expect(await updateTaskText(plugin, task({ line: 0, format: "legacy" }), "X")).toEqual({
+    expect(
+      await updateTaskText(plugin, task({ line: 0, format: "legacy", text: "Gone" }), "X")
+    ).toEqual({
       ok: false,
       reason: "stale-line",
     });
@@ -96,7 +105,11 @@ describe("taskWriter results", () => {
   it("returns unsupported when moving a custom-format task", async () => {
     const plugin = makePlugin("- [ ] Custom @2026-01-01");
     expect(
-      await moveTask(plugin, task({ line: 0, format: "custom", date: "2026-01-01" }), "2026-02-01")
+      await moveTask(
+        plugin,
+        task({ line: 0, format: "custom", date: "2026-01-01", text: "Custom" }),
+        "2026-02-01"
+      )
     ).toEqual({ ok: false, reason: "unsupported" });
     expect(plugin.getContent()).toBe("- [ ] Custom @2026-01-01");
   });
@@ -105,7 +118,7 @@ describe("taskWriter results", () => {
 describe("toggleTask", () => {
   it("checks and unchecks without done markers when recordDoneTime is off", async () => {
     const plugin = makePlugin("- [ ] Buy milk |[date:: 2026-01-05]");
-    const t = task({ line: 0, format: "legacy", date: "2026-01-05" });
+    const t = task({ line: 0, format: "legacy", date: "2026-01-05", text: "Buy milk" });
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe("- [x] Buy milk |[date:: 2026-01-05]");
@@ -120,7 +133,7 @@ describe("toggleTask", () => {
     const plugin = makePlugin("- [ ] Buy milk |[date:: 2026-01-05]", {
       recordDoneTime: true,
     });
-    const t = task({ line: 0, format: "legacy", date: "2026-01-05" });
+    const t = task({ line: 0, format: "legacy", date: "2026-01-05", text: "Buy milk" });
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe(
@@ -135,7 +148,7 @@ describe("toggleTask", () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-05T12:00:00.000Z"));
     const plugin = makePlugin("- [ ] Ship 📅 2026-01-05", { recordDoneTime: true });
-    const t = task({ line: 0, format: "tasks", date: "2026-01-05" });
+    const t = task({ line: 0, format: "tasks", date: "2026-01-05", text: "Ship" });
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe(
@@ -147,14 +160,22 @@ describe("toggleTask", () => {
 describe("moveTask", () => {
   it("rewrites legacy [date::] fields", async () => {
     const plugin = makePlugin("- [ ] Meet |[date:: 2026-01-05] |[time:: 09:00]");
-    const t = task({ line: 0, format: "legacy", date: "2026-01-05", time: "09:00" });
+    const t = task({
+      line: 0,
+      format: "legacy",
+      date: "2026-01-05",
+      time: "09:00",
+      text: "Meet",
+    });
     expect(await moveTask(plugin, t, "2026-02-01")).toEqual({ ok: true });
     expect(plugin.getContent()).toBe("- [ ] Meet |[date:: 2026-02-01] |[time:: 09:00]");
   });
 
   it("appends a date field when the line has none", async () => {
     const plugin = makePlugin("- [ ] No date yet");
-    expect(await moveTask(plugin, task({ line: 0, format: "legacy" }), "2026-03-01")).toEqual({
+    expect(
+      await moveTask(plugin, task({ line: 0, format: "legacy", text: "No date yet" }), "2026-03-01")
+    ).toEqual({
       ok: true,
     });
     expect(plugin.getContent()).toBe("- [ ] No date yet |[date:: 2026-03-01]");
@@ -162,7 +183,13 @@ describe("moveTask", () => {
 
   it("rewrites tasks-format emoji dates", async () => {
     const plugin = makePlugin("- [ ] Ship 📅 2026-01-05 ⏰ 10:00");
-    const t = task({ line: 0, format: "tasks", date: "2026-01-05", time: "10:00" });
+    const t = task({
+      line: 0,
+      format: "tasks",
+      date: "2026-01-05",
+      time: "10:00",
+      text: "Ship",
+    });
     expect(await moveTask(plugin, t, "2026-04-01")).toEqual({ ok: true });
     expect(plugin.getContent()).toBe("- [ ] Ship 📅 2026-04-01 ⏰ 10:00");
   });
@@ -212,8 +239,48 @@ describe("updateTaskText", () => {
   });
 });
 
-describe("multi-line files", () => {
-  it("only modifies the targeted line", async () => {
+describe("line drift", () => {
+  it("finds the task after lines were inserted above", async () => {
+    const plugin = makePlugin(
+      ["# Heading", "", "- [ ] Target |[date:: 2026-01-05]"].join("\n")
+    );
+    const t = task({
+      line: 0,
+      format: "legacy",
+      text: "Target",
+      date: "2026-01-05",
+      raw: "- [ ] Target |[date:: 2026-01-05]",
+    });
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      ["# Heading", "", "- [x] Target |[date:: 2026-01-05]"].join("\n")
+    );
+    expect(t.line).toBe(2);
+  });
+
+  it("does not toggle a different task that now sits at the old line index", async () => {
+    const plugin = makePlugin(
+      [
+        "- [ ] Intruder |[date:: 2026-01-05]",
+        "- [ ] Target |[date:: 2026-01-05]",
+      ].join("\n")
+    );
+    const t = task({
+      line: 0,
+      format: "legacy",
+      text: "Target",
+      date: "2026-01-05",
+    });
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      [
+        "- [ ] Intruder |[date:: 2026-01-05]",
+        "- [x] Target |[date:: 2026-01-05]",
+      ].join("\n")
+    );
+  });
+
+  it("only modifies the targeted line in a multi-line file", async () => {
     const plugin = makePlugin(
       ["# Heading", "- [ ] First |[date:: 2026-01-05]", "- [ ] Second |[date:: 2026-01-05]"].join(
         "\n"
