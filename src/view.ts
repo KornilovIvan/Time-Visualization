@@ -134,6 +134,9 @@ export class TimeVisualizationView extends ItemView {
   private onFileChanged(path: string): void {
     if (this.debounceTimer !== null) window.clearTimeout(this.debounceTimer);
     this.debounceTimer = window.setTimeout(async () => {
+      // Snapshot before updateFile: after delete/move the cache may no longer
+      // list this file on visible dates, but the on-screen cards still need a refill.
+      const affectedBefore = this.fileAffectsView(path);
       try {
         await this.index.updateFile(path);
       } catch (e) {
@@ -141,7 +144,8 @@ export class TimeVisualizationView extends ItemView {
         return;
       }
       if (this.suppressRender) return;
-      if (!this.fileAffectsView(path)) return;
+      const affectedAfter = this.fileAffectsView(path);
+      if (!affectedBefore && !affectedAfter) return;
       // Refill the active level's slides in place (without recreating the track)
       if (this.track) {
         const meta = getCarouselMeta(this, this.level);
@@ -181,6 +185,7 @@ export class TimeVisualizationView extends ItemView {
     return set;
   }
 
+  /** True if the file's cached tasks currently touch a visible date. */
   private fileAffectsView(filePath: string): boolean {
     const dates = this.visibleDates();
     const tasks = this.index.getFileTasks(filePath);
