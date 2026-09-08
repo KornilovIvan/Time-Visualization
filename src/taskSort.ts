@@ -88,6 +88,18 @@ export interface GroupSortKey {
   path: string;
   /** true = timed bucket, false = untimed, null = merged (no data-timed). */
   timed: boolean | null;
+  /** Earliest HH:MM in the group — tie-breaks equal priority (matches index order). */
+  earliestTime?: string | null;
+}
+
+/** Earliest time string among tasks, or null if none are timed. */
+export function earliestTaskTime(tasks: readonly ParsedTask[]): string | null {
+  let best: string | null = null;
+  for (const t of tasks) {
+    if (!t.time) continue;
+    if (best === null || t.time.localeCompare(best) < 0) best = t.time;
+  }
+  return best;
 }
 
 /** Same ordering rules as sortedGroups — used for DOM reinsert on un-toggle. */
@@ -118,7 +130,15 @@ export function compareGroups(
     if (a.timed === false) return 1;
     if (b.timed === false) return -1;
   }
-  return 0;
+  // Equal priority: match TaskIndex open-task order (time, then path)
+  const at = a.earliestTime ?? null;
+  const bt = b.earliestTime ?? null;
+  if (at && bt) {
+    const tc = at.localeCompare(bt);
+    if (tc !== 0) return tc;
+  } else if (at && !bt) return -1;
+  else if (!at && bt) return 1;
+  return a.path.localeCompare(b.path);
 }
 
 function groupTimedFlag(g: TaskGroup): boolean | null {
@@ -126,10 +146,10 @@ function groupTimedFlag(g: TaskGroup): boolean | null {
 }
 
 /** Groups sorted by priority: per-day order first, then the global priority
-    list, then unprioritized groups in their by-time order. Timed and untimed
-    tasks from the same note are separate buckets for sorting; adjacent buckets
-    of the same note are merged for display. When "time over priority" is on,
-    every timed subgroup sorts above every untimed one. */
+    list, then by earliest task time / path (same as the date index). Timed and
+    untimed tasks from the same note are separate buckets for sorting; adjacent
+    buckets of the same note are merged for display. When "time over priority"
+    is on, every timed subgroup sorts above every untimed one. */
 export function sortedGroups(
   settings: TaskSortSettings,
   tasks: ParsedTask[],
@@ -138,8 +158,8 @@ export function sortedGroups(
   const groups = splitTimedGroups(tasks);
   groups.sort((a, b) =>
     compareGroups(
-      { path: a.path, timed: groupTimedFlag(a) },
-      { path: b.path, timed: groupTimedFlag(b) },
+      { path: a.path, timed: groupTimedFlag(a), earliestTime: earliestTaskTime(a.tasks) },
+      { path: b.path, timed: groupTimedFlag(b), earliestTime: earliestTaskTime(b.tasks) },
       settings,
       dateKey
     )
@@ -170,19 +190,65 @@ export function groupTimedFromEl(el: HTMLElement): boolean | null {
   return null;
 }
 
+/** Earliest timed task in a rendered group (via taskRefs). */
+export function earliestTimeFromGroupEl(
+  el: HTMLElement,
+  taskRefs: Map<string, ParsedTask>
+): string | null {
+  const tasksRoot = el.querySelector(".tv-day-group-tasks") ?? el;
+  const tasks: ParsedTask[] = [];
+  for (const child of Array.from(tasksRoot.children) as HTMLElement[]) {
+    const key = child.dataset.taskKey;
+    if (!key) continue;
+    const t = taskRefs.get(key);
+    if (t) tasks.push(t);
+  }
+  return earliestTaskTime(tasks);
+}
+
+/**
+ * Where to insert `task` among siblings in one group.
+ * Returns the sibling index to insert before, or siblings.length to append.
+ * Matches TaskIndex open-task order within a timed/untimed bucket.
+ */
+export function findTaskInsertIndex(
+  siblings: ReadonlyArray<Pick<ParsedTask, "time" | "line" | "filePath">>,
+  task: Pick<ParsedTask, "time" | "line" | "filePath">
+): number {
+  for (let i = 0; i < siblings.length; i++) {
+    const other = siblings[i];
+    if (task.time && other.time) {
+      const tc = task.time.localeCompare(other.time);
+      if (tc < 0) return i;
+      if (tc > 0) continue;
+      if (task.line < other.line) return i;
+      continue;
+    }
+    if (task.time && !other.time) return i;
+    if (!task.time && other.time) continue;
+    const pc = task.filePath.localeCompare(other.filePath);
+    if (pc < 0) return i;
+    if (pc > 0) continue;
+    if (task.line < other.line) return i;
+  }
+  return siblings.length;
+}
+
 /** First sibling group that should come after `key`, or null to append. */
 export function findGroupInsertBefore(
   siblings: HTMLElement[],
   key: GroupSortKey,
   settings: TaskSortSettings,
   dateKey: string,
-  skip?: HTMLElement
+  skip?: HTMLElement,
+  taskRefs?: Map<string, ParsedTask>
 ): HTMLElement | null {
   for (const g of siblings) {
     if (g === skip) continue;
     const other: GroupSortKey = {
       path: g.dataset.file || "",
       timed: groupTimedFromEl(g),
+      earliestTime: taskRefs ? earliestTimeFromGroupEl(g, taskRefs) : null,
     };
     if (compareGroups(key, other, settings, dateKey) < 0) return g;
   }

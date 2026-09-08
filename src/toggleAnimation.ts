@@ -1,7 +1,11 @@
 import type { ParsedTask } from "./parser";
 import type { ViewHost } from "./viewHost";
 import { createTaskGroup } from "./taskGroup";
-import { findGroupInsertBefore } from "./taskSort";
+import {
+  earliestTimeFromGroupEl,
+  findGroupInsertBefore,
+  findTaskInsertIndex,
+} from "./taskSort";
 
 export function fadeIn(el: HTMLElement, duration: number): void {
   el.animate(
@@ -180,16 +184,24 @@ export function applyTaskToggled(
         let createdGroup = false;
         const dateKey = slide.dataset.key ?? "";
         const settings = view.plugin.settings;
+        const groupKeyTime = (g: HTMLElement | null): string | null => {
+          const fromDom = g ? earliestTimeFromGroupEl(g, view.taskRefs) : null;
+          if (t.time && fromDom) {
+            return t.time.localeCompare(fromDom) < 0 ? t.time : fromDom;
+          }
+          return t.time ?? fromDom;
+        };
         if (!group) {
           group = createTaskGroup(view, activeList, t.filePath, dateKey, timed);
-          // Same order as sortedGroups (timeOverPriority / dayOrder / priorities)
+          // Same order as sortedGroups (priority + earliest time tie-break)
           const siblings = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
           const before = findGroupInsertBefore(
             siblings,
-            { path: t.filePath, timed },
+            { path: t.filePath, timed, earliestTime: t.time ?? null },
             settings,
             dateKey,
-            group
+            group,
+            view.taskRefs
           );
           activeList.insertBefore(group, before);
           createdGroup = true;
@@ -197,12 +209,19 @@ export function applyTaskToggled(
           // Existing bucket may sit in the wrong section after other toggles —
           // re-place it with the same sort rules before inserting the row
           const siblings = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
+          const timedFlag =
+            group.dataset.timed === "1" ? true : group.dataset.timed === "0" ? false : null;
           const before = findGroupInsertBefore(
             siblings,
-            { path: t.filePath, timed: group.dataset.timed === "1" ? true : group.dataset.timed === "0" ? false : null },
+            {
+              path: t.filePath,
+              timed: timedFlag,
+              earliestTime: groupKeyTime(group),
+            },
             settings,
             dateKey,
-            group
+            group,
+            view.taskRefs
           );
           if (before !== group.nextElementSibling) {
             activeList.insertBefore(group, before);
@@ -210,31 +229,17 @@ export function applyTaskToggled(
         }
         const tasksEl = group.querySelector(".tv-day-group-tasks") as HTMLElement | null;
         if (tasksEl) {
-          let insertBefore: HTMLElement | null = null;
+          const siblingTasks: ParsedTask[] = [];
+          const siblingEls: HTMLElement[] = [];
           for (const child of Array.from(tasksEl.children) as HTMLElement[]) {
             const otherKey = child.dataset.taskKey;
             const other = otherKey ? view.taskRefs.get(otherKey) : undefined;
-            if (timed && t.time && other?.time) {
-              if (other.time > t.time) {
-                insertBefore = child;
-                break;
-              }
-              if (other.time === t.time) {
-                const line = parseInt(otherKey?.slice(otherKey.indexOf(":") + 1) ?? "999999", 10);
-                if (line > t.line) {
-                  insertBefore = child;
-                  break;
-                }
-              }
-              continue;
-            }
-            const line = parseInt(otherKey?.slice(otherKey.indexOf(":") + 1) ?? "999999", 10);
-            if (line > t.line) {
-              insertBefore = child;
-              break;
-            }
+            if (!other) continue;
+            siblingTasks.push(other);
+            siblingEls.push(child);
           }
-          tasksEl.insertBefore(row, insertBefore);
+          const idx = findTaskInsertIndex(siblingTasks, t);
+          tasksEl.insertBefore(row, siblingEls[idx] ?? null);
         }
         // Remove the note's Done group if it became empty (first, so the layout
         // stabilizes and the header "arrival" is precise)

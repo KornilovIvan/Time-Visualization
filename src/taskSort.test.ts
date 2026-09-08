@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { ParsedTask } from "./parser";
 import {
   compareGroups,
+  findTaskInsertIndex,
   globalPriorityIndex,
   hasGlobalPriority,
   mergeAdjacentSameNoteGroups,
@@ -189,6 +190,40 @@ describe("compareGroups", () => {
       )
     ).toBeLessThan(0);
   });
+  it("orders equal-priority timed groups by earliest time (un-toggle reinsert)", () => {
+    // Completing then restoring A must not append it after B/C when A is earlier
+    expect(
+      compareGroups(
+        { path: "A.md", timed: true, earliestTime: "09:00" },
+        { path: "B.md", timed: true, earliestTime: "10:00" },
+        base,
+        DAY
+      )
+    ).toBeLessThan(0);
+    expect(
+      compareGroups(
+        { path: "C.md", timed: true, earliestTime: "11:00" },
+        { path: "A.md", timed: true, earliestTime: "09:00" },
+        base,
+        DAY
+      )
+    ).toBeGreaterThan(0);
+  });
+
+  it("prefers dayOrder over earliest time", () => {
+    const settings: TaskSortSettings = {
+      ...base,
+      dayOrder: { [DAY]: ["B.md", "A.md"] },
+    };
+    expect(
+      compareGroups(
+        { path: "B.md", timed: true, earliestTime: "15:00" },
+        { path: "A.md", timed: true, earliestTime: "08:00" },
+        settings,
+        DAY
+      )
+    ).toBeLessThan(0);
+  });
 });
 
 describe("sortedGroups", () => {
@@ -199,6 +234,32 @@ describe("sortedGroups", () => {
       DAY
     );
     expect(pathsTimed(groups)).toEqual([{ path: "A.md", timed: null }]);
+  });
+
+  it("orders timed notes by earliest time when priorities are equal", () => {
+    // Simulate: A was completed (removed), B and C remain; restoring A must
+    // sort as A → B → C by time, not append after C
+    const remaining = sortedGroups(
+      { ...base, timeOverPriority: true },
+      [task("B.md", { time: "10:00" }), task("C.md", { time: "11:00" })],
+      DAY
+    );
+    expect(remaining.map((g) => g.path)).toEqual(["B.md", "C.md"]);
+
+    const restored = sortedGroups(
+      { ...base, timeOverPriority: true },
+      [
+        task("B.md", { time: "10:00" }),
+        task("C.md", { time: "11:00" }),
+        task("A.md", { time: "09:00" }),
+      ],
+      DAY
+    );
+    expect(restored.filter((g) => g.timed === true).map((g) => g.path)).toEqual([
+      "A.md",
+      "B.md",
+      "C.md",
+    ]);
   });
 
   it("keeps timed above all untimed across notes when timeOverPriority is on", () => {
@@ -277,8 +338,28 @@ describe("sortedGroups", () => {
       [task("A.md"), task("B.md")],
       DAY
     );
-    // No day override — stable relative order from split (Map insertion by file)
+    // No day override — equal priority falls back to path order
     expect(groups.map((g) => g.path)).toEqual(["A.md", "B.md"]);
+  });
+});
+
+describe("findTaskInsertIndex", () => {
+  it("reinserts a timed task by time among siblings (complete then uncomplete)", () => {
+    const siblings = [
+      task("N.md", { line: 1, time: "09:00" }),
+      task("N.md", { line: 3, time: "11:00" }),
+    ];
+    // Mid-day task was completed and returns between 09:00 and 11:00
+    expect(findTaskInsertIndex(siblings, task("N.md", { line: 2, time: "10:00" }))).toBe(1);
+    // Earlier than all
+    expect(findTaskInsertIndex(siblings, task("N.md", { line: 0, time: "08:00" }))).toBe(0);
+    // Later than all
+    expect(findTaskInsertIndex(siblings, task("N.md", { line: 4, time: "12:00" }))).toBe(2);
+  });
+
+  it("ties equal times by line number", () => {
+    const siblings = [task("N.md", { line: 1, time: "09:00" }), task("N.md", { line: 5, time: "09:00" })];
+    expect(findTaskInsertIndex(siblings, task("N.md", { line: 3, time: "09:00" }))).toBe(1);
   });
 });
 
