@@ -20,7 +20,7 @@ Everything is one continuous view: switch levels with a click, page through time
 
 ## Features
 
-- **Three zoom levels** — day, week and month in one continuous view; switch with a click or page with the arrow keys.
+- **Three zoom levels** — day, week and month on desktop; mobile shows the day view only.
 - **Parses tasks from all notes** — no manual aggregation; tasks are grouped by their source note.
 - **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
 - **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
@@ -34,7 +34,8 @@ Everything is one continuous view: switch levels with a click, page through time
 
 ## Compatibility
 
-- Obsidian **1.4.10+** (desktop only).
+- Obsidian **1.4.10+** (desktop and mobile).
+- **Mobile** — day view only (week/month stay desktop).
 - Task formats: `|[date:: YYYY-MM-DD]`, Tasks `📅 YYYY-MM-DD`, or a custom regex.
 
 ## Task format
@@ -63,11 +64,11 @@ The date/time format is chosen in the plugin settings:
 
 Open the view via the ribbon icon (calendar) or the command palette: **"Open Time Visualization"**.
 
-- **Switch levels** — header buttons: Day / Week / Month.
+- **Switch levels** — header buttons: Day / Week / Month (desktop). On mobile only the day view is available.
 - **Navigate** — arrows `← →` in the day view, `↑ ↓` in the week and month views.
 - **Toggle a task** — click its checkbox (animated move to/from the Done section).
-- **Edit / move a task** — hover a task in the day view, click the `⋯` menu: *Edit* (inline) or *Move to next day*.
-- **Priority for a day** — hover the day header, click **Priority**, reorder groups with ↑/↓.
+- **Edit / move a task** — hover a task in the day view (desktop), click the `⋯` menu: *Edit* (inline) or *Move to next day*. Not available on mobile.
+- **Priority for a day** — hover the day header (desktop), click **Priority**, reorder groups with ↑/↓. Not available on mobile.
 - **Go to today** — the **Today** button.
 
 ## Settings
@@ -85,7 +86,7 @@ In the plugin settings tab:
 
 ## Install
 
-Copy the built `main.js`, `styles.css` and `manifest.json` into `<vault>/.obsidian/plugins/time-visualization/` and enable the plugin. Requires Obsidian **1.4.10+** (desktop).
+Copy the built `main.js`, `styles.css` and `manifest.json` into `<vault>/.obsidian/plugins/time-visualization/` and enable the plugin. Requires Obsidian **1.4.10+** (desktop and mobile; mobile is day view only).
 
 From Community Plugins (when listed): search for **Time Visualization** and install.
 

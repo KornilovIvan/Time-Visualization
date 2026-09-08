@@ -1,0 +1,81 @@
+/* === mobile.css: Day-only mobile layout (root has .tv-mobile) === */
+
+.tv-root.tv-mobile {
+  padding: 0 8px 0;
+  gap: 0;
+}
+
+/* Day content on top, nav bar at the bottom */
+.tv-root.tv-mobile .tv-stage {
+  order: 1;
+  flex: 1;
+  min-height: 0;
+  padding-bottom: 0;
+}
+
+.tv-root.tv-mobile .tv-header {
+  order: 2;
+  flex-shrink: 0;
+  gap: 8px;
+  padding: 2px 4px 10px;
+  /* Pull the bar halfway into the gap under the card (gap was ~28px) */
+  margin-top: -14px;
+  /* Clear Obsidian's mobile navbar; lowered by one button height (~40px) toward it */
+  margin-bottom: calc(
+    var(--navbar-height, 56px)
+    + env(safe-area-inset-bottom, 0px)
+    + 28px
+    - 40px
+  );
+  background: var(--background-primary);
+}
+
+.tv-root.tv-mobile .tv-controls {
+  width: 100%;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tv-root.tv-mobile .tv-btn {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 0.95em;
+}
+
+.tv-root.tv-mobile .tv-today {
+  min-width: 72px;
+}
+
+.tv-root.tv-mobile .tv-btn svg {
+  width: 1.15em;
+  height: 1.15em;
+}
+
+/* Card at the top, shorter than the stage — leave a gap above the button bar */
+.tv-root.tv-mobile .tv-day-track {
+  top: 0;
+  height: calc(100% - 28px);
+}
+
+.tv-root.tv-mobile .tv-day-slide {
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.tv-root.tv-mobile .tv-day-track .tv-day-slide:nth-child(1),
+.tv-root.tv-mobile .tv-day-track .tv-day-slide:nth-child(3) {
+  opacity: 0.25;
+  transform: scale(0.98);
+  box-shadow: none;
+}
+
+.tv-root.tv-mobile .tv-day-track .tv-day-slide:nth-child(2) {
+  transform: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.07), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.tv-root.tv-mobile .tv-day-slide .tv-task {
+  padding: 8px 16px;
+  min-height: 40px;
+}

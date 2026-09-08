@@ -45,3 +45,7 @@ export function setIcon(_el: HTMLElement, _id: string): void {}
 export function sanitizeHTMLToDom(_html: string): DocumentFragment {
   return document.createDocumentFragment();
 }
+
+export const Platform = {
+  isMobile: false,
+};

@@ -5,5 +5,5 @@
 	"minAppVersion": "1.4.10",
 	"description": "Task calendar with smooth zoom between day, week and month views.",
 	"author": "ivankornilov",
-	"isDesktopOnly": true
+	"isDesktopOnly": false
 }

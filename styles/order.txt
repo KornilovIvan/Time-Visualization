@@ -6,4 +6,5 @@ day.css
 priority.css
 day-content.css
 task.css
+mobile.css
 utilities.css

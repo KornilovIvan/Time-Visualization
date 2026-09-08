@@ -16,6 +16,7 @@ import {
 import { applyTaskToggled } from "./toggleAnimation";
 import { showDayPriorityMenu, showTaskMenu } from "./menus";
 import { toggleTask } from "./taskWriter";
+import { isMobileUi } from "./platform";
 
 export { VIEW_TYPE, type Level } from "./viewHost";
 
@@ -73,6 +74,8 @@ export class TimeVisualizationView extends ItemView {
   }
 
   async onOpen(): Promise<void> {
+    // Mobile: day view only (week/month are too dense on a phone screen)
+    if (isMobileUi()) this.level = "day";
     await this.index.refresh();
     this.buildUI();
     this.registerEvent(
@@ -239,6 +242,8 @@ export class TimeVisualizationView extends ItemView {
   }
 
   setLevel(level: Level, resetToToday = false): void {
+    // Mobile ships day-only; ignore week/month switches from week/month cards or leftover UI
+    if (isMobileUi() && level !== "day") return;
     if (this.level === level) return;
     if (resetToToday) this.cursor = startOfDay(new Date());
     this.level = level;
@@ -258,6 +263,7 @@ export class TimeVisualizationView extends ItemView {
 
   private buildUI(): void {
     this.root = this.contentEl.createDiv({ cls: "tv-root" });
+    if (isMobileUi()) this.root.addClass("tv-mobile");
     this.root.tabIndex = -1;
     this.headerEl = this.root.createDiv({ cls: "tv-header" });
     this.buildHeader(this.headerEl);
@@ -390,19 +396,22 @@ export class TimeVisualizationView extends ItemView {
     setIcon(btnNext, "chevron-right");
     btnNext.addEventListener("click", () => this.navigate(1));
 
-    const levels = controls.createDiv({ cls: "tv-levels" });
-    const defs: Array<[Level, string]> = [
-      ["day", "Day"],
-      ["week", "Week"],
-      ["month", "Month"],
-    ];
-    for (const [lv, label] of defs) {
-      const b = levels.createEl("button", {
-        cls: "tv-level" + (this.level === lv ? " is-active" : ""),
-        text: label,
-        attr: { "data-level": lv },
-      });
-      b.addEventListener("click", () => this.setLevel(lv, true));
+    // Mobile: day view only — no Week/Month switcher
+    if (!isMobileUi()) {
+      const levels = controls.createDiv({ cls: "tv-levels" });
+      const defs: Array<[Level, string]> = [
+        ["day", "Day"],
+        ["week", "Week"],
+        ["month", "Month"],
+      ];
+      for (const [lv, label] of defs) {
+        const b = levels.createEl("button", {
+          cls: "tv-level" + (this.level === lv ? " is-active" : ""),
+          text: label,
+          attr: { "data-level": lv },
+        });
+        b.addEventListener("click", () => this.setLevel(lv, true));
+      }
     }
 
     const settingsBtn = controls.createEl("button", {

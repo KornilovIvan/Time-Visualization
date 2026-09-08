@@ -2,6 +2,7 @@ import { formatDate, parseDate } from "./parser";
 import { addDays, startOfWeek } from "./dates";
 import type { Level, ViewHost } from "./viewHost";
 import { fillDayCard, fillMonthSlide, fillWeekSlide } from "./dayRender";
+import { isMobileUi } from "./platform";
 
 /** Per-level carousel metadata: DOM classes, movement axis, sizes, cursor shift, slide filling */
 export interface CarouselMeta {
@@ -26,7 +27,8 @@ export function getCarouselMeta(view: ViewHost, level: Level): CarouselMeta {
       trackCls: "tv-day-track",
       slideCls: "tv-day-slide",
       axis: "x",
-      slideRatio: 0.93,
+      // Phones: nearly full-width day card (less peek of neighbors)
+      slideRatio: isMobileUi() ? 0.98 : 0.93,
       duration: 240,
       lazyNeighbors: false,
       keyOf: (d) => formatDate(d),

@@ -8,6 +8,7 @@ import {
 import type { ViewHost } from "./viewHost";
 import { buildCollapsedGroup, fillGroup } from "./taskRow";
 import { groupTasksByFile, sortedGroups } from "./taskSort";
+import { isMobileUi } from "./platform";
 
 /** Week slide: 7 day columns with tasks */
 export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date): void {
@@ -118,20 +119,21 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
     cls: "tv-day-month",
     text: `${MONTHS_EN[day.getMonth()]} ${day.getFullYear()}`,
   });
-  // Priority/reorder button in the day header (shown on hover over the header)
-  const prioBtn = head.createEl("button", {
-    cls: "tv-day-priority",
-    attr: { "aria-label": "Reorder group priorities" },
-  });
-  prioBtn.setText("Priority");
-  head.addEventListener("mouseenter", () => prioBtn.addClass("is-show"));
-  head.addEventListener("mouseleave", () => prioBtn.removeClass("is-show"));
-  prioBtn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    view.openDayPriorityMenu(prioBtn, formatDate(day));
-  });
-
+  // Priority/reorder button in the day header (desktop only; shown on hover)
+  if (!isMobileUi()) {
+    const prioBtn = head.createEl("button", {
+      cls: "tv-day-priority",
+      attr: { "aria-label": "Reorder group priorities" },
+    });
+    prioBtn.setText("Priority");
+    head.addEventListener("mouseenter", () => prioBtn.addClass("is-show"));
+    head.addEventListener("mouseleave", () => prioBtn.removeClass("is-show"));
+    prioBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      view.openDayPriorityMenu(prioBtn, formatDate(day));
+    });
+  }
   fillDayBody(view, card, day, false);
 }
 

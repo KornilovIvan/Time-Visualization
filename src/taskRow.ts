@@ -5,6 +5,7 @@ import { fileName } from "./dates";
 import type { ViewHost } from "./viewHost";
 import { attachNoteLink, attachInternalLinkHovers, createTaskGroup } from "./taskGroup";
 import { updateTaskText } from "./taskWriter";
+import { isMobileUi } from "./platform";
 
 export function fillGroup(
   view: ViewHost,
@@ -137,9 +138,8 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
     }
   }
 
-  // Task menu: only visible in the day card on hover (hidden elsewhere via CSS).
-  // Custom-format tasks are read-only, so the menu is omitted.
-  if (t.format !== "custom") {
+  // Task menu: day card on desktop hover only. Custom-format = read-only; mobile omits edit/move.
+  if (t.format !== "custom" && !isMobileUi()) {
     const menuBtn = row.createEl("button", {
       cls: "tv-task-menu",
       attr: { "aria-label": "Task menu" },
