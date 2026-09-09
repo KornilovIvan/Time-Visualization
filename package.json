@@ -1,6 +1,6 @@
 {
   "name": "time-visualization",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Time Visualization for Obsidian",
   "main": "main.js",
   "scripts": {
