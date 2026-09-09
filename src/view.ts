@@ -384,6 +384,41 @@ export class TimeVisualizationView extends ItemView {
   private buildHeader(header: HTMLElement): void {
     const controls = header.createDiv({ cls: "tv-controls" });
 
+    if (isMobileUi()) {
+      // Full-width bottom bar: [←] [Today] [Settings] [→]
+      controls.addClass("tv-mobile-bar");
+
+      const btnPrev = controls.createEl("button", {
+        cls: "tv-btn tv-nav-side",
+        attr: { "aria-label": "Previous" },
+      });
+      setIcon(btnPrev, "chevron-left");
+      btnPrev.addEventListener("click", () => this.navigate(-1));
+
+      const mid = controls.createDiv({ cls: "tv-mobile-mid" });
+      const btnToday = mid.createEl("button", { cls: "tv-btn tv-today", text: "Today" });
+      btnToday.addEventListener("click", () => this.goToday());
+
+      const settingsBtn = mid.createEl("button", {
+        cls: "tv-btn tv-settings",
+        attr: { "aria-label": "Settings" },
+      });
+      setIcon(settingsBtn, "settings");
+      settingsBtn.addEventListener("click", () => {
+        const setting = (this.app as unknown as { setting?: { open(): void; openTabById(id: string): void } }).setting;
+        setting?.open();
+        setting?.openTabById(this.plugin.manifest.id);
+      });
+
+      const btnNext = controls.createEl("button", {
+        cls: "tv-btn tv-nav-side",
+        attr: { "aria-label": "Next" },
+      });
+      setIcon(btnNext, "chevron-right");
+      btnNext.addEventListener("click", () => this.navigate(1));
+      return;
+    }
+
     const nav = controls.createDiv({ cls: "tv-nav" });
     const btnPrev = nav.createEl("button", { cls: "tv-btn", attr: { "aria-label": "Previous" } });
     setIcon(btnPrev, "chevron-left");
@@ -396,22 +431,19 @@ export class TimeVisualizationView extends ItemView {
     setIcon(btnNext, "chevron-right");
     btnNext.addEventListener("click", () => this.navigate(1));
 
-    // Mobile: day view only — no Week/Month switcher
-    if (!isMobileUi()) {
-      const levels = controls.createDiv({ cls: "tv-levels" });
-      const defs: Array<[Level, string]> = [
-        ["day", "Day"],
-        ["week", "Week"],
-        ["month", "Month"],
-      ];
-      for (const [lv, label] of defs) {
-        const b = levels.createEl("button", {
-          cls: "tv-level" + (this.level === lv ? " is-active" : ""),
-          text: label,
-          attr: { "data-level": lv },
-        });
-        b.addEventListener("click", () => this.setLevel(lv, true));
-      }
+    const levels = controls.createDiv({ cls: "tv-levels" });
+    const defs: Array<[Level, string]> = [
+      ["day", "Day"],
+      ["week", "Week"],
+      ["month", "Month"],
+    ];
+    for (const [lv, label] of defs) {
+      const b = levels.createEl("button", {
+        cls: "tv-level" + (this.level === lv ? " is-active" : ""),
+        text: label,
+        attr: { "data-level": lv },
+      });
+      b.addEventListener("click", () => this.setLevel(lv, true));
     }
 
     const settingsBtn = controls.createEl("button", {

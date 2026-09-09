@@ -16,8 +16,8 @@
 .tv-root.tv-mobile .tv-header {
   order: 2;
   flex-shrink: 0;
-  gap: 8px;
-  padding: 2px 4px 10px;
+  gap: 0;
+  padding: 0;
   /* Pull the bar halfway into the gap under the card (gap was ~28px) */
   margin-top: -14px;
   /* Clear Obsidian's mobile navbar; lowered by one button height (~40px) toward it */
@@ -30,26 +30,50 @@
   background: var(--background-primary);
 }
 
-.tv-root.tv-mobile .tv-controls {
+.tv-root.tv-mobile .tv-controls.tv-mobile-bar {
   width: 100%;
-  justify-content: space-between;
-  gap: 8px;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  gap: 6px;
+  padding: 0 2px 4px;
 }
 
-.tv-root.tv-mobile .tv-btn {
-  min-width: 44px;
-  min-height: 44px;
+.tv-root.tv-mobile .tv-mobile-mid {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.tv-root.tv-mobile .tv-nav-side {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 8px;
+  border-radius: 10px;
+}
+
+.tv-root.tv-mobile .tv-nav-side svg {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.tv-root.tv-mobile .tv-mobile-mid .tv-btn {
+  min-width: 56px;
+  min-height: 52px;
   padding: 10px 14px;
   font-size: 0.95em;
+  border-radius: 10px;
 }
 
-.tv-root.tv-mobile .tv-today {
+.tv-root.tv-mobile .tv-mobile-mid .tv-today {
   min-width: 72px;
 }
 
-.tv-root.tv-mobile .tv-btn svg {
-  width: 1.15em;
-  height: 1.15em;
+.tv-root.tv-mobile .tv-mobile-mid .tv-btn svg {
+  width: 1.25em;
+  height: 1.25em;
 }
 
 /* Card at the top, shorter than the stage — leave a gap above the button bar */
