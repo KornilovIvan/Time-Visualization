@@ -2,6 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ParsedTask } from "./parser";
 import {
   compareGroups,
+  dayOrderIndex,
+  dayPriorityKey,
+  dayPriorityPaths,
   findTaskInsertIndex,
   globalPriorityIndex,
   hasGlobalPriority,
@@ -316,6 +319,38 @@ describe("sortedGroups", () => {
     ]);
   });
 
+  it("keeps all notes under a dayOrder folder together (not one at the bottom)", () => {
+    // Bug: day list had only one note from the folder; the sibling sank below
+    // everything in dayOrder despite sharing the global folder priority.
+    const settings: TaskSortSettings = {
+      ...base,
+      priorities: ["Work"],
+      dayOrder: { [DAY]: ["Work/a.md", "Solo.md"] },
+    };
+    const groups = sortedGroups(
+      settings,
+      [task("Solo.md"), task("Work/b.md"), task("Work/a.md"), task("Z.md")],
+      DAY
+    );
+    const paths = groups.map((g) => g.path);
+    expect(paths.indexOf("Work/a.md")).toBeLessThan(paths.indexOf("Solo.md"));
+    expect(paths.indexOf("Work/b.md")).toBeLessThan(paths.indexOf("Solo.md"));
+    expect(paths.indexOf("Solo.md")).toBeLessThan(paths.indexOf("Z.md"));
+  });
+
+  it("honors a folder entry stored in dayOrder", () => {
+    const groups = sortedGroups(
+      {
+        ...base,
+        priorities: ["Work"],
+        dayOrder: { [DAY]: ["Solo.md", "Work"] },
+      },
+      [task("Work/a.md"), task("Work/b.md"), task("Solo.md")],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual(["Solo.md", "Work/a.md", "Work/b.md"]);
+  });
+
   it("lets dayOrder override global priority for that day", () => {
     const groups = sortedGroups(
       {
@@ -360,6 +395,32 @@ describe("findTaskInsertIndex", () => {
   it("ties equal times by line number", () => {
     const siblings = [task("N.md", { line: 1, time: "09:00" }), task("N.md", { line: 5, time: "09:00" })];
     expect(findTaskInsertIndex(siblings, task("N.md", { line: 3, time: "09:00" }))).toBe(1);
+  });
+});
+
+describe("dayPriorityKey / dayPriorityPaths / dayOrderIndex", () => {
+  it("maps notes under a global folder to that folder key", () => {
+    expect(dayPriorityKey(["Work", "Other.md"], "Work/a.md")).toBe("Work");
+    expect(dayPriorityKey(["Work", "Other.md"], "Other.md")).toBe("Other.md");
+    expect(dayPriorityKey(["Work"], "Alone.md")).toBe("Alone.md");
+  });
+
+  it("collapses folder notes into one day-menu row", () => {
+    const paths = dayPriorityPaths(
+      { ...base, priorities: ["Work"] },
+      [task("Work/b.md"), task("Solo.md"), task("Work/a.md")],
+      DAY
+    );
+    expect(paths).toEqual(["Work", "Solo.md"]);
+  });
+
+  it("dayOrderIndex matches folders and inherits sibling note ranks", () => {
+    const day = ["Work/a.md", "Solo.md"];
+    const priorities = ["Work"];
+    expect(dayOrderIndex(day, "Work/a.md", priorities)).toBe(0);
+    expect(dayOrderIndex(day, "Work/b.md", priorities)).toBe(0);
+    expect(dayOrderIndex(day, "Solo.md", priorities)).toBe(1);
+    expect(dayOrderIndex(["Work", "Solo.md"], "Work/b.md", priorities)).toBe(0);
   });
 });
 

@@ -7,7 +7,7 @@ import { startEditTask } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
 import { moveTask } from "./taskWriter";
-import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
+import { hasGlobalPriority, dayPriorityPaths } from "./taskSort";
 
 export function closeTaskMenu(view: ViewHost): void {
   if (view.taskMenu) {
@@ -167,17 +167,17 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   const popup = createDiv();
   popup.className = "tv-task-menu-popup tv-priority-popup";
 
-  // Groups currently in this day, in their displayed (sorted) order
+  // Priority rows for this day: global folders stay as one unit (like Settings)
   const tasks = view.index.getTasks(dateKey);
   const active = tasks.filter((t) => !t.checked);
-  const order = sortedGroupPaths(view.plugin.settings, active, dateKey);
+  const order = dayPriorityPaths(view.plugin.settings, active, dateKey);
   const priorities = view.plugin.settings.priorities;
 
   mountPriorityList(popup, {
     items: order.map((p) => ({
       path: p,
       label: fileName(p),
-      isGlobal: hasGlobalPriority(priorities, p),
+      isGlobal: hasGlobalPriority(priorities, p) || priorities.includes(p),
     })),
     rowClass: "tv-task-menu-item",
     tipText: order.length > 0 ? "Use the arrows to reorder priority" : undefined,

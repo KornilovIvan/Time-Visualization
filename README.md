@@ -68,7 +68,7 @@ Open the view via the ribbon icon (calendar) or the command palette: **"Open Tim
 - **Navigate** — arrows `← →` in the day view, `↑ ↓` in the week and month views.
 - **Toggle a task** — click its checkbox (animated move to/from the Done section).
 - **Edit / move a task** — hover a task in the day view (desktop), click the `⋯` menu: *Edit* (inline) or *Move to next day*. Not available on mobile.
-- **Priority for a day** — hover the day header (desktop), click **Priority**, reorder groups with ↑/↓. Not available on mobile.
+- **Priority for a day** — hover the day header (desktop), click **Priority**, reorder groups with ↑/↓. Notes under a global folder priority appear as that folder (same as Settings). Not available on mobile.
 - **Go to today** — the **Today** button.
 
 ## Settings

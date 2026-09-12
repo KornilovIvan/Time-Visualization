@@ -83,6 +83,53 @@ export function hasGlobalPriority(priorities: string[], notePath: string): boole
   return globalPriorityIndex(priorities, notePath) !== undefined;
 }
 
+/**
+ * Global priority entry used as the day-menu row for this note: a covering
+ * folder stays a folder (one unit for all notes inside); otherwise the note.
+ */
+export function dayPriorityKey(priorities: string[], notePath: string): string {
+  const idx = globalPriorityIndex(priorities, notePath);
+  if (idx === undefined) return notePath;
+  const entry = priorities[idx];
+  if (!entry.endsWith(".md")) return entry;
+  return notePath;
+}
+
+/**
+ * Day-order rank for a note. Entries may be notes or folders (same matching
+ * rules as global priority). If the day list still has individual notes under
+ * a global folder, sibling notes in that folder inherit the best matching rank
+ * so they do not fall to the bottom.
+ */
+export function dayOrderIndex(
+  day: string[],
+  notePath: string,
+  priorities: string[] = []
+): number | undefined {
+  let best: number | undefined;
+  for (let i = 0; i < day.length; i++) {
+    if (!priorityEntryMatches(day[i], notePath)) continue;
+    if (best === undefined || i < best) best = i;
+  }
+  if (best !== undefined) return best;
+
+  const folder = (() => {
+    const idx = globalPriorityIndex(priorities, notePath);
+    if (idx === undefined) return undefined;
+    const entry = priorities[idx];
+    return entry.endsWith(".md") ? undefined : entry;
+  })();
+  if (!folder) return undefined;
+
+  for (let i = 0; i < day.length; i++) {
+    const e = day[i];
+    if (e === folder || (e.endsWith(".md") && priorityEntryMatches(folder, e))) {
+      if (best === undefined || i < best) best = i;
+    }
+  }
+  return best;
+}
+
 /** Minimal identity of a display group for ordering (matches data-timed on DOM). */
 export interface GroupSortKey {
   path: string;
@@ -113,11 +160,11 @@ export function compareGroups(
   const bTimed = b.timed === true;
   if (settings.timeOverPriority && aTimed !== bTimed) return aTimed ? -1 : 1;
   const day = settings.dayOrder[dateKey] ?? [];
-  const ad = day.indexOf(a.path);
-  const bd = day.indexOf(b.path);
-  if (ad !== -1 && bd !== -1 && ad !== bd) return ad - bd;
-  if (ad !== -1 && bd === -1) return -1;
-  if (bd !== -1 && ad === -1) return 1;
+  const ad = dayOrderIndex(day, a.path, settings.priorities);
+  const bd = dayOrderIndex(day, b.path, settings.priorities);
+  if (ad !== undefined && bd !== undefined && ad !== bd) return ad - bd;
+  if (ad !== undefined && bd === undefined) return -1;
+  if (bd !== undefined && ad === undefined) return 1;
   const ag = globalPriorityIndex(settings.priorities, a.path);
   const bg = globalPriorityIndex(settings.priorities, b.path);
   if (ag !== undefined && bg !== undefined && ag !== bg) return ag - bg;
@@ -167,7 +214,7 @@ export function sortedGroups(
   return mergeAdjacentSameNoteGroups(groups);
 }
 
-/** Unique note paths in display order (for the day priority menu). */
+/** Unique note paths in display order. */
 export function sortedGroupPaths(
   settings: TaskSortSettings,
   tasks: ParsedTask[],
@@ -181,6 +228,27 @@ export function sortedGroupPaths(
     paths.push(g.path);
   }
   return paths;
+}
+
+/**
+ * Day-priority menu rows: notes covered by a global folder priority collapse
+ * into that folder (same unit as Settings); other notes stay as themselves.
+ */
+export function dayPriorityPaths(
+  settings: TaskSortSettings,
+  tasks: ParsedTask[],
+  dateKey: string
+): string[] {
+  const notePaths = sortedGroupPaths(settings, tasks, dateKey);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const note of notePaths) {
+    const key = dayPriorityKey(settings.priorities, note);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(key);
+  }
+  return out;
 }
 
 /** Read timed flag from a rendered .tv-day-group element. */
