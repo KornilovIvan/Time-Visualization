@@ -5,6 +5,7 @@ import {
   earliestTimeFromGroupEl,
   findGroupInsertBefore,
   findTaskInsertIndex,
+  formatDoneAt,
 } from "./taskSort";
 
 export function fadeIn(el: HTMLElement, duration: number): void {
@@ -12,6 +13,20 @@ export function fadeIn(el: HTMLElement, duration: number): void {
     [{ opacity: 0 }, { opacity: 1 }],
     { duration, easing: "ease-out", fill: "backwards" }
   );
+}
+
+/** Keep / clear the completion-time label on a task row after toggle. */
+function syncDoneAtLabel(row: HTMLElement, t: ParsedTask): void {
+  const text = row.querySelector(".tv-task-text") as HTMLElement | null;
+  if (!text) return;
+  let el = text.querySelector(".tv-task-done-at") as HTMLElement | null;
+  if (t.checked && t.done) {
+    const label = "done " + formatDoneAt(t.done);
+    if (!el) el = text.createSpan({ cls: "tv-task-done-at" });
+    el.setText(label);
+  } else if (el) {
+    el.remove();
+  }
 }
 
 export function ensureDoneVisible(slide: HTMLElement): void {
@@ -114,6 +129,14 @@ export function applyTaskToggled(
   t.checked = !t.checked;
   row.classList.toggle("is-done", t.checked);
   if (box) box.classList.toggle("is-checked", t.checked);
+  if (t.checked) {
+    if (view.plugin.settings.recordDoneTime && !t.done) {
+      t.done = new Date().toISOString();
+    }
+  } else {
+    t.done = undefined;
+  }
+  syncDoneAtLabel(row, t);
   const slide = row.closest(".tv-day-slide, .tv-day-card") as HTMLElement | null;
 
   const mutate = (): void => {
@@ -124,32 +147,20 @@ export function applyTaskToggled(
       const activeGroup = row.closest(".tv-day-group") as HTMLElement | null;
       const doneList = slide.querySelector(".tv-day-done-list") as HTMLElement | null;
       if (doneList) {
-        // Done section stays grouped by note only (no timed split)
-        let doneGroup = doneList.querySelector<HTMLElement>(".tv-day-group[data-file=\"" + esc + "\"]");
+        // Done keeps completion order: only append into the last group when it
+        // is the same note (a new run). Never merge into an earlier group.
+        const lastGroup = doneList.lastElementChild as HTMLElement | null;
+        const lastMatches =
+          !!lastGroup &&
+          lastGroup.classList.contains("tv-day-group") &&
+          lastGroup.dataset.file === t.filePath;
         const isLastInGroup =
           !!activeGroup &&
           activeGroup.querySelector(".tv-day-group-tasks")?.childElementCount === 1;
 
-        if (!doneGroup && activeGroup && isLastInGroup) {
-          // The whole group (header + task) moves to Done as one block
-          delete activeGroup.dataset.timed;
-          doneList.appendChild(activeGroup);
-          ensureDoneVisible(slide);
-        } else {
-          if (!doneGroup) {
-            doneGroup = createTaskGroup(view, doneList, t.filePath, slide?.dataset.key);
-            const createdTitle = doneGroup.querySelector(".tv-day-group-title") as HTMLElement | null;
-            if (createdTitle) {
-              fadeIn(createdTitle, 260);
-            }
-          }
-          const dTasksEl = doneGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
+        if (lastMatches) {
+          const dTasksEl = lastGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
           if (activeGroup && isLastInGroup) {
-            // Last task of the group: merging the header separately and then
-            // lifting the list in a second FLIP caused a visible double step
-            // (the group rose part-way, paused, then jumped). Move the whole
-            // group into Done and remove the empty active group inside this
-            // single FLIP, so the list lifts once, smoothly.
             const aTasksEl = activeGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
             if (aTasksEl) {
               for (const child of Array.from(aTasksEl.children)) dTasksEl?.appendChild(child);
@@ -158,6 +169,17 @@ export function applyTaskToggled(
           } else {
             dTasksEl?.appendChild(row);
           }
+          ensureDoneVisible(slide);
+        } else if (activeGroup && isLastInGroup) {
+          delete activeGroup.dataset.timed;
+          doneList.appendChild(activeGroup);
+          ensureDoneVisible(slide);
+        } else {
+          const doneGroup = createTaskGroup(view, doneList, t.filePath, slide?.dataset.key);
+          const createdTitle = doneGroup.querySelector(".tv-day-group-title") as HTMLElement | null;
+          if (createdTitle) fadeIn(createdTitle, 260);
+          const dTasksEl = doneGroup.querySelector(".tv-day-group-tasks") as HTMLElement | null;
+          dTasksEl?.appendChild(row);
           ensureDoneVisible(slide);
         }
       } else {

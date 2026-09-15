@@ -23,7 +23,7 @@ Everything is one continuous view: switch levels with a click, page through time
 - **Three zoom levels** — day, week and month on desktop; mobile shows the day view only.
 - **Parses tasks from all notes** — no manual aggregation; tasks are grouped by their source note.
 - **Multiple date formats** — legacy inline fields, Obsidian Tasks (`📅`), or your own regex.
-- **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day.
+- **Edit in place** — toggle checkboxes with animation, inline-edit the text, move a task to the next day. Done keeps completion order: consecutive tasks from the same note stay together, but completing another note in between starts a new group; completion time is shown when “Record completion time” is on.
 - **Clickable links** — `[[wiki links]]` and bare `https://…` URLs open without toggling the task; Ctrl/Cmd+hover uses Page Preview like note titles.
 - **Completion order** — when enabled, on completion the `[date:: …]` field becomes a `[done:: …]` marker, so completed tasks keep their order across reloads.
 - **Group priorities** — ordered list of notes or folders in Settings (folders cover notes inside them), or reorder a day's groups from the day header.

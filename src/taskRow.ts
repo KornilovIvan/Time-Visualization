@@ -6,6 +6,7 @@ import type { ViewHost } from "./viewHost";
 import { attachNoteLink, attachInternalLinkHovers, createTaskGroup } from "./taskGroup";
 import { updateTaskText } from "./taskWriter";
 import { isMobileUi } from "./platform";
+import { formatDoneAt } from "./taskSort";
 
 export function fillGroup(
   view: ViewHost,
@@ -38,6 +39,10 @@ export function buildCollapsedGroup(
   group.dataset.day = key;
   group.dataset.section = section;
   if (timed !== undefined) group.dataset.timed = timed ? "1" : "0";
+  // Done runs may repeat the same note — remember exactly which tasks belong here
+  if (section === "done") {
+    group.dataset.taskKeys = tasks.map((t) => `${t.filePath}:${t.line}`).join("\n");
+  }
 
   // makeGroupTitle is not used: in the collapsed state the name must not be a
   // link (CSS sets its pointer-events to none)
@@ -61,11 +66,15 @@ export function buildCollapsedGroup(
       const fPath = group.dataset.file ?? path;
       const sec = (group.dataset.section as "active" | "done") ?? section;
       const wantTimed = group.dataset.timed;
+      const keySet = group.dataset.taskKeys
+        ? new Set(group.dataset.taskKeys.split("\n").filter(Boolean))
+        : null;
       const fresh = view.index
         .getTasks(dayKey)
         .filter((t) => {
           if (t.filePath !== fPath) return false;
           if (sec === "done" ? !t.checked : t.checked) return false;
+          if (keySet && !keySet.has(`${t.filePath}:${t.line}`)) return false;
           if (wantTimed === "1") return !!t.time;
           if (wantTimed === "0") return !t.time;
           return true;
@@ -129,6 +138,9 @@ export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): H
 
   if (t.time) {
     text.createSpan({ cls: "tv-task-time", text: " " + t.time });
+  }
+  if (t.checked && t.done) {
+    text.createSpan({ cls: "tv-task-done-at", text: "done " + formatDoneAt(t.done) });
   }
 
   if (t.tags.length > 0) {

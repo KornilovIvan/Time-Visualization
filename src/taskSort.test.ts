@@ -6,7 +6,9 @@ import {
   dayPriorityKey,
   dayPriorityPaths,
   findTaskInsertIndex,
+  formatDoneAt,
   globalPriorityIndex,
+  groupDoneByCompletionRuns,
   hasGlobalPriority,
   mergeAdjacentSameNoteGroups,
   priorityEntryMatches,
@@ -44,6 +46,41 @@ function task(
 function pathsTimed(groups: TaskGroup[]): Array<{ path: string; timed: boolean | null }> {
   return groups.map((g) => ({ path: g.path, timed: g.timed }));
 }
+
+describe("groupDoneByCompletionRuns", () => {
+  it("splits same-note tasks when another note was completed between them", () => {
+    const runs = groupDoneByCompletionRuns([
+      { ...task("A.md", { line: 1, text: "a1" }), checked: true, done: "2026-01-01T10:00:00.000Z" },
+      { ...task("B.md", { line: 1, text: "b1" }), checked: true, done: "2026-01-01T11:00:00.000Z" },
+      { ...task("A.md", { line: 2, text: "a2" }), checked: true, done: "2026-01-01T12:00:00.000Z" },
+    ]);
+    expect(runs.map((g) => ({ path: g.path, texts: g.tasks.map((t) => t.text) }))).toEqual([
+      { path: "A.md", texts: ["a1"] },
+      { path: "B.md", texts: ["b1"] },
+      { path: "A.md", texts: ["a2"] },
+    ]);
+  });
+
+  it("merges only consecutive tasks from the same note", () => {
+    const runs = groupDoneByCompletionRuns([
+      { ...task("A.md", { line: 1, text: "a1" }), checked: true, done: "2026-01-01T10:00:00.000Z" },
+      { ...task("A.md", { line: 2, text: "a2" }), checked: true, done: "2026-01-01T10:30:00.000Z" },
+      { ...task("B.md", { line: 1, text: "b1" }), checked: true, done: "2026-01-01T11:00:00.000Z" },
+    ]);
+    expect(runs.map((g) => ({ path: g.path, n: g.tasks.length }))).toEqual([
+      { path: "A.md", n: 2 },
+      { path: "B.md", n: 1 },
+    ]);
+  });
+});
+
+describe("formatDoneAt", () => {
+  it("formats a valid ISO timestamp to a local clock time", () => {
+    const label = formatDoneAt("2026-01-01T15:30:00.000Z");
+    expect(label.length).toBeGreaterThan(0);
+    expect(label).not.toBe("2026-01-01T15:30:00.000Z");
+  });
+});
 
 describe("priorityEntryMatches / globalPriorityIndex", () => {
   it("matches exact notes and folder prefixes", () => {

@@ -7,7 +7,7 @@ import {
 } from "./dates";
 import type { ViewHost } from "./viewHost";
 import { buildCollapsedGroup, fillGroup } from "./taskRow";
-import { groupTasksByFile, sortedGroups } from "./taskSort";
+import { groupDoneByCompletionRuns, sortedGroups } from "./taskSort";
 import { isMobileUi } from "./platform";
 
 /** Week slide: 7 day columns with tasks */
@@ -171,9 +171,9 @@ export function fillDayBody(
   doneSection.createDiv({ cls: "tv-day-done-title", text: "Done" });
   const doneList = doneSection.createDiv({ cls: "tv-day-done-list" });
   if (done.length > 0) {
-    for (const [path, gt] of groupTasksByFile(done)) {
-      if (collapsible) buildCollapsedGroup(view, doneList, gt, path, key, compact, "done");
-      else fillGroup(view, doneList, gt, path, key, compact);
+    for (const g of groupDoneByCompletionRuns(done)) {
+      if (collapsible) buildCollapsedGroup(view, doneList, g.tasks, g.path, key, compact, "done");
+      else fillGroup(view, doneList, g.tasks, g.path, key, compact);
     }
   }
 }

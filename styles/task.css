@@ -220,6 +220,20 @@
   font-variant-numeric: tabular-nums;
 }
 
+.tv-task-done-at {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+  font-size: 0.85em;
+  line-height: 1.5;
+  vertical-align: baseline;
+}
+
 .tv-task-tags {
   display: inline-flex;
   flex-wrap: wrap;

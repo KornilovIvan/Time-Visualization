@@ -20,6 +20,35 @@ export function groupTasksByFile(tasks: ParsedTask[]): Map<string, ParsedTask[]>
   return groups;
 }
 
+/**
+ * Done section: keep completion order, but only merge consecutive tasks from
+ * the same note. Completing note A, then B, then A again yields three groups
+ * (A | B | A), not one merged A group.
+ * `tasks` must already be sorted by completion time (see TaskIndex).
+ */
+export function groupDoneByCompletionRuns(tasks: ParsedTask[]): TaskGroup[] {
+  const out: TaskGroup[] = [];
+  for (const t of tasks) {
+    const prev = out[out.length - 1];
+    if (prev && prev.path === t.filePath) {
+      prev.tasks.push(t);
+    } else {
+      out.push({ path: t.filePath, tasks: [t], timed: null });
+    }
+  }
+  return out;
+}
+
+/** Format a [done::] ISO timestamp for the Done list (local clock time). */
+export function formatDoneAt(iso: string): string {
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return iso.trim();
+  return new Date(ms).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 /** One display group: tasks from a note, optionally split into timed / untimed. */
 export interface TaskGroup {
   path: string;
