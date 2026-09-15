@@ -14,7 +14,7 @@ import {
   renderCarousel,
 } from "./carousel";
 import { applyTaskToggled } from "./toggleAnimation";
-import { showDayPriorityMenu, showTaskMenu } from "./menus";
+import { closePriorityMenu, closeTaskMenu, showDayPriorityMenu, showTaskMenu } from "./menus";
 import { toggleTask } from "./taskWriter";
 import { isMobileUi } from "./platform";
 
@@ -245,18 +245,24 @@ export class TimeVisualizationView extends ItemView {
     // Mobile ships day-only; ignore week/month switches from week/month cards or leftover UI
     if (isMobileUi() && level !== "day") return;
     if (this.level === level) return;
+    closePriorityMenu(this);
+    closeTaskMenu(this);
     if (resetToToday) this.cursor = startOfDay(new Date());
     this.level = level;
     this.render();
   }
 
   navigate(dir: 1 | -1): void {
+    closePriorityMenu(this);
+    closeTaskMenu(this);
     carouselStep(this, dir, getCarouselMeta(this, this.level));
   }
 
   goToday(): void {
     const now = startOfDay(new Date());
     if (formatDate(this.cursor) === formatDate(now)) return;
+    closePriorityMenu(this);
+    closeTaskMenu(this);
     this.cursor = now;
     this.render();
   }
