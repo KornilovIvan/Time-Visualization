@@ -68,7 +68,7 @@ Open the view via the ribbon icon (calendar) or the command palette: **"Open Tim
 - **Navigate** — arrows `← →` in the day view, `↑ ↓` in the week and month views.
 - **Toggle a task** — click its checkbox (animated move to/from the Done section).
 - **Edit / move a task** — hover a task in the day view (desktop), click the `⋯` menu: *Edit* (inline) or *Move to next day*. Not available on mobile.
-- **Priority for a day** — hover the day header (desktop), click **Priority**, reorder groups with ↑/↓. Notes under a global folder priority appear as that folder (same as Settings). Not available on mobile.
+- **Priority for a day** — hover the day header (desktop), click **Priority**, reorder notes with ↑/↓. You can rearrange notes inside a priority folder or move a note above/below other groups for that day. Not available on mobile.
 - **Go to today** — the **Today** button.
 
 ## Settings
@@ -80,7 +80,7 @@ In the plugin settings tab:
 - **Date format** — inline fields (`[date:: …]`), Obsidian Tasks (`📅`), or a custom regex.
 - **Record completion time** — on completion the `[date:: …]` field is replaced with a `[done:: …]` marker, keeping the done order across reloads. If you uncheck a task outside this view, the `[done:: …]` marker stays in the line — it is restored to `[date:: …]` when you toggle the task in the view. Off by default.
 - **Open view on startup** — open the view automatically every time Obsidian starts. Off by default.
-- **Priority** — ordered list of notes or folders; their groups sort to the top of the day view. Reorder with the ↑/↓ arrows (first = highest). A per-day order can be set from the day header's Priority button.
+- **Priority** — ordered list of notes or folders; first = highest. A folder covers notes inside it; list a specific note above that folder to pin it higher than its siblings. A per-day order of individual notes can be set from the day header's Priority button.
 - **Time over priority** — when on, groups with timed tasks sort above untimed groups.
 - **Rescan** — rebuild the index with the new filters / date format.
 

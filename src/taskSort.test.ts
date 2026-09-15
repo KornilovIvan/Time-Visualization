@@ -351,6 +351,41 @@ describe("sortedGroups", () => {
     expect(groups.map((g) => g.path)).toEqual(["Solo.md", "Work/a.md", "Work/b.md"]);
   });
 
+  it("orders notes inside a priority folder by explicit dayOrder", () => {
+    const groups = sortedGroups(
+      {
+        ...base,
+        priorities: ["Work"],
+        dayOrder: { [DAY]: ["Work/b.md", "Work/a.md", "Solo.md"] },
+      },
+      [task("Work/a.md"), task("Work/b.md"), task("Solo.md")],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual(["Work/b.md", "Work/a.md", "Solo.md"]);
+  });
+
+  it("lets a note leave the folder band in dayOrder (detach below another note)", () => {
+    const groups = sortedGroups(
+      {
+        ...base,
+        priorities: ["Work"],
+        dayOrder: { [DAY]: ["Work/a.md", "Solo.md", "Work/b.md"] },
+      },
+      [task("Work/a.md"), task("Work/b.md"), task("Solo.md")],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual(["Work/a.md", "Solo.md", "Work/b.md"]);
+  });
+
+  it("pins a note above its folder via a more specific global priority entry", () => {
+    const groups = sortedGroups(
+      { ...base, priorities: ["Work/b.md", "Work", "Solo.md"] },
+      [task("Work/a.md"), task("Work/b.md"), task("Solo.md")],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual(["Work/b.md", "Work/a.md", "Solo.md"]);
+  });
+
   it("lets dayOrder override global priority for that day", () => {
     const groups = sortedGroups(
       {
@@ -405,7 +440,7 @@ describe("dayPriorityKey / dayPriorityPaths / dayOrderIndex", () => {
     expect(dayPriorityKey(["Work"], "Alone.md")).toBe("Alone.md");
   });
 
-  it("collapses folder notes into one day-menu row", () => {
+  it("collapses folder notes into one path list helper (menu lists notes separately)", () => {
     const paths = dayPriorityPaths(
       { ...base, priorities: ["Work"] },
       [task("Work/b.md"), task("Solo.md"), task("Work/a.md")],

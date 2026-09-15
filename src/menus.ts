@@ -7,7 +7,14 @@ import { startEditTask } from "./taskRow";
 import { flipMove, syncActiveSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
 import { moveTask } from "./taskWriter";
-import { hasGlobalPriority, dayPriorityPaths } from "./taskSort";
+import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
+
+/** Day-priority row label: keep folder prefix so notes in a priority folder are distinct. */
+function priorityLabel(path: string): string {
+  if (!path.endsWith(".md")) return fileName(path) || path;
+  const noExt = path.replace(/\.md$/i, "");
+  return noExt.includes("/") ? noExt : fileName(path);
+}
 
 export function closeTaskMenu(view: ViewHost): void {
   if (view.taskMenu) {
@@ -167,20 +174,22 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   const popup = createDiv();
   popup.className = "tv-task-menu-popup tv-priority-popup";
 
-  // Priority rows for this day: global folders stay as one unit (like Settings)
+  // One row per note so you can reorder within a priority folder or move a
+  // note out of the folder band. Folder-aware dayOrder still applies when
+  // sorting (and for notes not yet listed after a local reorder).
   const tasks = view.index.getTasks(dateKey);
   const active = tasks.filter((t) => !t.checked);
-  const order = dayPriorityPaths(view.plugin.settings, active, dateKey);
+  const order = sortedGroupPaths(view.plugin.settings, active, dateKey);
   const priorities = view.plugin.settings.priorities;
 
   mountPriorityList(popup, {
     items: order.map((p) => ({
       path: p,
-      label: fileName(p),
-      isGlobal: hasGlobalPriority(priorities, p) || priorities.includes(p),
+      label: priorityLabel(p),
+      isGlobal: hasGlobalPriority(priorities, p),
     })),
     rowClass: "tv-task-menu-item",
-    tipText: order.length > 0 ? "Use the arrows to reorder priority" : undefined,
+    tipText: order.length > 0 ? "Reorder notes for this day" : undefined,
     emptyText: order.length === 0 ? "No open groups in this day" : undefined,
     setIndexAttr: true,
     onOrderChange: (paths) => {

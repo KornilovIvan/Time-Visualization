@@ -97,9 +97,11 @@ export function dayPriorityKey(priorities: string[], notePath: string): string {
 
 /**
  * Day-order rank for a note. Entries may be notes or folders (same matching
- * rules as global priority). If the day list still has individual notes under
- * a global folder, sibling notes in that folder inherit the best matching rank
- * so they do not fall to the bottom.
+ * rules as global priority).
+ *
+ * Direct matches win (so a note can be pulled out of the folder band). Notes
+ * not listed still inherit from a folder entry or from sibling notes under the
+ * same global folder, so they do not sink below unrelated dayOrder rows.
  */
 export function dayOrderIndex(
   day: string[],
