@@ -30,67 +30,114 @@
 .tv-nav {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 .tv-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 4px 10px;
-  border-radius: 6px;
-  background: var(--background-modifier-border);
+  gap: 4px;
+  padding: 5px 12px;
+  min-height: 30px;
+  border-radius: 10px;
+  background: var(--background-primary) !important;
   color: var(--text-normal);
   cursor: pointer;
-  border: none;
-  font-size: 0.9em;
-  transition: background 120ms ease, transform 120ms ease;
+  border: 1px solid var(--background-modifier-border) !important;
+  box-shadow: none;
+  font-size: 0.88em;
+  font-weight: 500;
 }
 
-.tv-btn:hover {
-  background: var(--background-modifier-border-hover);
-}
-
+.tv-btn:hover,
+.tv-btn:focus,
 .tv-btn:active {
-  transform: scale(0.95);
+  background: var(--background-primary) !important;
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border) !important;
+  box-shadow: none !important;
+  transform: none;
 }
 
 .tv-today {
-  background: var(--interactive-accent);
-  color: var(--text-on-accent);
+  background: var(--background-primary) !important;
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border) !important;
+  box-shadow: none;
+  font-weight: 500;
 }
 
-.tv-today:hover {
-  background: var(--interactive-accent-hover);
+.tv-today:hover,
+.tv-today:focus,
+.tv-today:active {
+  background: var(--background-primary) !important;
+  color: var(--text-normal);
+  border-color: var(--background-modifier-border) !important;
 }
 
 .tv-levels {
   display: flex;
-  gap: 4px;
+  align-items: center;
+  gap: 2px;
   padding: 3px;
-  background: var(--background-modifier-border);
-  border-radius: 8px;
+  background: var(--background-primary) !important;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  box-shadow: none;
+  overflow: visible;
 }
 
 .tv-level {
-  padding: 4px 12px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: var(--text-muted);
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.75em;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  /* Match .tv-today typography when not selected */
+  color: var(--text-normal) !important;
   cursor: pointer;
-  font-size: 0.9em;
-  transition: background 150ms ease, color 150ms ease;
+  font-size: 0.88em;
+  font-weight: 500;
+  line-height: 1;
 }
 
-.tv-level:hover {
-  color: var(--text-normal);
+.tv-level > span {
+  display: inline-block;
+  transform-origin: center center;
+  transition: transform 150ms ease, color 150ms ease;
+  color: inherit;
+  font-weight: inherit;
 }
 
-.tv-level.is-active {
-  background: var(--background-primary);
+.tv-level:hover,
+.tv-level:focus,
+.tv-level:active {
+  color: var(--text-normal) !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tv-level.is-active,
+.tv-level.is-active:hover,
+.tv-level.is-active:focus {
+  background: transparent !important;
+  color: var(--text-normal) !important;
+  font-weight: 700;
+  box-shadow: none !important;
+}
+
+/* Enlarge label only — button box stays put so the frame border is not covered */
+.tv-level.is-active > span {
+  transform: scale(1.14);
   color: var(--text-normal);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  font-weight: 700;
 }
 
 .tv-body {

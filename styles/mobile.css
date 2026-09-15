@@ -51,12 +51,13 @@
   min-width: 0;
   min-height: 52px;
   padding: 12px 8px;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .tv-root.tv-mobile .tv-nav-side svg {
   width: 1.5em;
   height: 1.5em;
+  color: inherit;
 }
 
 .tv-root.tv-mobile .tv-mobile-mid .tv-btn {
@@ -64,7 +65,7 @@
   min-height: 52px;
   padding: 10px 14px;
   font-size: 0.95em;
-  border-radius: 10px;
+  border-radius: 12px;
 }
 
 .tv-root.tv-mobile .tv-mobile-mid .tv-today {

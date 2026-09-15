@@ -446,9 +446,9 @@ export class TimeVisualizationView extends ItemView {
     for (const [lv, label] of defs) {
       const b = levels.createEl("button", {
         cls: "tv-level" + (this.level === lv ? " is-active" : ""),
-        text: label,
         attr: { "data-level": lv },
       });
+      b.createSpan({ text: label });
       b.addEventListener("click", () => this.setLevel(lv, true));
     }
 
