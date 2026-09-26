@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "obsidian";
-import type { ParsedTask } from "./parser";
-import { moveTask, toggleTask, updateTaskText } from "./taskWriter";
-import type TimeVisualizationPlugin from "./main";
+import type { ParsedTask } from "../parser";
+import { moveTask, toggleTask, updateTaskText } from "../taskWriter";
+import type TimeVisualizationPlugin from "../main";
 
 type FakePlugin = TimeVisualizationPlugin & {
   getContent: () => string;
@@ -169,6 +169,18 @@ describe("moveTask", () => {
     });
     expect(await moveTask(plugin, t, "2026-02-01")).toEqual({ ok: true });
     expect(plugin.getContent()).toBe("- [ ] Meet |[date:: 2026-02-01] |[time:: 09:00]");
+  });
+
+  it("rewrites a date field that has spaces around ::", async () => {
+    const plugin = makePlugin("- [ ] Meet |[date :: 2026-01-05]");
+    const t = task({
+      line: 0,
+      format: "legacy",
+      date: "2026-01-05",
+      text: "Meet",
+    });
+    expect(await moveTask(plugin, t, "2026-02-01")).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe("- [ ] Meet |[date:: 2026-02-01]");
   });
 
   it("appends a date field when the line has none", async () => {

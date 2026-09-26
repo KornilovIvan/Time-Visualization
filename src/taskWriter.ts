@@ -111,7 +111,7 @@ export async function toggleTask(
     if (checked) {
       // Returning the task to open — turn [done:: ...] back into [date:: ...]
       // so the date is restored and fields never duplicate
-      const doneRe = /\[done::\s*([^\]]*)\]/;
+      const doneRe = /\[\s*done\s*::\s*([^\]]*)\]/;
       const dm = doneRe.exec(lines[lineIndex]);
       if (dm) {
         const doneVal = dm[1].trim();
@@ -128,7 +128,7 @@ export async function toggleTask(
       // old behavior and just append the marker.
       const now = new Date().toISOString();
       if (task.format === "legacy") {
-        const dateRe = /\[date::\s*[^\]]*\]/;
+        const dateRe = /\[\s*date\s*::\s*[^\]]*\]/;
         if (dateRe.test(lines[lineIndex])) {
           lines[lineIndex] = lines[lineIndex].replace(dateRe, `[done:: ${now}]`);
         } else {
@@ -137,7 +137,7 @@ export async function toggleTask(
       } else {
         lines[lineIndex] =
           lines[lineIndex]
-            .replace(/\[done::\s*[^\]]*\]/g, "")
+            .replace(/\[\s*done\s*::\s*[^\]]*\]/g, "")
             .replace(/(?:\s*\|)+\s*$/g, "")
             .trimEnd() + ` |[done:: ${now}]`;
       }
@@ -173,7 +173,7 @@ export async function moveTask(
       lines[lineIndex] = line.trimEnd() + ` 📅 ${newDate}`;
     }
   } else {
-    const dateRe = /\[date::\s*[^\]]*\]/;
+    const dateRe = /\[\s*date\s*::\s*[^\]]*\]/;
     if (dateRe.test(line)) {
       lines[lineIndex] = line.replace(dateRe, `[date:: ${newDate}]`);
     } else {

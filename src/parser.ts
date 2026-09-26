@@ -27,11 +27,13 @@ export interface ParsedTask {
 // Task line: optional quote/callout prefix "> " (also nested)
 const TASK_RE = /^\s*(?:>\s*)*[-*]\s+\[( |x|X)\]\s+(.*)$/;
 
-// Legacy inline fields [date:: ...] / [time:: ...]
-const INLINE_RE = /\[(date|time)::\s*([^\]]*)\]/g;
+// Legacy inline fields [date:: ...] / [time:: ...]. Spaces around the name and ::
+// are allowed: [date :: 2026-08-05], [ date::2026-08-05 ]
+const INLINE_RE = /\[\s*(date|time)\s*::\s*([^\]]*)\]/g;
 
-// Completion marker [done:: <ISO>] — written on toggle, read in any format
-const DONE_RE = /\[done::\s*([^\]]*)\]/;
+// Completion marker [done:: <ISO>] — written on toggle, read in any format.
+// Same spacing as date/time fields.
+const DONE_RE = /\[\s*done\s*::\s*([^\]]*)\]/;
 
 // Tasks plugin fields: 📅 due date, ⏰ time
 const TASKS_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/;

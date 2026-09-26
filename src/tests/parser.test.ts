@@ -4,7 +4,7 @@ import {
   parseDate,
   parseTaskLine,
   startOfDay,
-} from "./parser";
+} from "../parser";
 
 const FILE = "Notes/day.md";
 
@@ -70,6 +70,15 @@ describe("parseTaskLine", () => {
       expect(t?.time).toBeUndefined();
       expect(t?.text).toBe("Empty");
     });
+
+    it("allows spaces around the field name and ::", () => {
+      const t = parse("- [ ] Meet |[date :: 2026-08-05] |[ time :: 09:30 ]");
+      expect(t).toMatchObject({
+        text: "Meet",
+        date: "2026-08-05",
+        time: "09:30",
+      });
+    });
   });
 
   describe("tasks format", () => {
@@ -116,6 +125,15 @@ describe("parseTaskLine", () => {
   });
 
   describe("done marker", () => {
+    it("reads a spaced [done ::] marker", () => {
+      const t = parse("- [x] Finished |[done :: 2026-08-05T12:00:00.000Z]");
+      expect(t).toMatchObject({
+        done: "2026-08-05T12:00:00.000Z",
+        date: "2026-08-05",
+        text: "Finished",
+      });
+    });
+
     it("reads [done::] in any format and falls back to its date", () => {
       const t = parse("- [x] Finished |[done:: 2026-08-05T12:00:00.000Z]");
       expect(t).toMatchObject({

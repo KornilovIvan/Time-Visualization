@@ -7,7 +7,7 @@ import {
   fileName,
   isoWeekNumber,
   startOfWeek,
-} from "./dates";
+} from "../dates";
 
 describe("calendar labels", () => {
   it("exposes 12 months and 7 weekdays starting on Monday", () => {

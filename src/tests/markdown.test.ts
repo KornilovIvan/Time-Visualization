@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderInlineMarkdown } from "./markdown";
+import { renderInlineMarkdown } from "../markdown";
 
 describe("renderInlineMarkdown links", () => {
   it("renders wiki links as internal anchors", () => {

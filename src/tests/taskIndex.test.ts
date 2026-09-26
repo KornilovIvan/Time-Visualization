@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { TFile } from "obsidian";
-import { TaskIndex } from "./taskIndex";
-import type TimeVisualizationPlugin from "./main";
-import { DEFAULT_SETTINGS, type TimeVisualizationSettings } from "./settings";
+import { TaskIndex } from "../taskIndex";
+import type TimeVisualizationPlugin from "../main";
+import { DEFAULT_SETTINGS, type TimeVisualizationSettings } from "../settings";
 
 type VaultFile = {
   file: TFile;

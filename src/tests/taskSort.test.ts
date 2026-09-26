@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { ParsedTask } from "./parser";
+import type { ParsedTask } from "../parser";
 import {
   compareGroups,
   dayOrderIndex,
@@ -17,7 +17,7 @@ import {
   splitTimedGroups,
   type TaskGroup,
   type TaskSortSettings,
-} from "./taskSort";
+} from "../taskSort";
 
 const DAY = "2026-01-01";
 

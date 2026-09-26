@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SETTINGS,
   normalizeLoadedSettings,
-} from "./settings";
+} from "../settings";
 
 describe("normalizeLoadedSettings", () => {
   it("returns defaults when data is null or undefined", () => {
