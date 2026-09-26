@@ -113,11 +113,13 @@
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
 
-.tv-month-cell.is-out {
+.tv-month-cell.is-out,
+.tv-month-cell.is-past {
   opacity: 0.35;
 }
 
-.tv-month .tv-day-card.is-out:hover {
+.tv-month .tv-day-card.is-out:hover,
+.tv-month .tv-day-card.is-past:hover {
   opacity: 1;
 }
 

@@ -23,8 +23,10 @@ export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date):
     const isToday = key === todayKey;
 
     const card = frag.appendChild(createDiv());
+    const isPast = key < todayKey;
     // Only the real today gets the outline — the same weekday exists in every week
-    card.className = "tv-day-card" + (isToday ? " is-today" : "");
+    card.className =
+      "tv-day-card" + (isToday ? " is-today" : "") + (isPast ? " is-past" : "");
     const head = card.createDiv({ cls: "tv-day-head" });
     head.createSpan({ cls: "tv-day-weekday", text: WEEKDAYS_SHORT_EN[i] });
     head.createSpan({ cls: "tv-day-num", text: String(day.getDate()) });
@@ -83,9 +85,11 @@ export function fillMonthSlide(view: ViewHost, slide: HTMLElement, first: Date):
 
     // Cell is a full day card, so FLIP/grouping/sections work like in day and week
     const cell = frag.appendChild(createDiv());
+    const isPast = key < todayKey;
     cell.className =
       "tv-month-cell tv-day-card" +
       (inMonth ? "" : " is-out") +
+      (inMonth && isPast ? " is-past" : "") +
       (isToday ? " is-today" : "");
     cell.dataset.key = key;
 
@@ -94,7 +98,6 @@ export function fillMonthSlide(view: ViewHost, slide: HTMLElement, first: Date):
     head.createSpan({ cls: "tv-day-num", text: String(day.getDate()) });
 
     // Only past days are collapsed (tasks built on click); today/future stay expanded
-    const isPast = key < todayKey;
     fillDayBody(view, cell, day, true, isPast);
 
     cell.addEventListener("click", (ev) => {

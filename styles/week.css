@@ -204,6 +204,17 @@
   letter-spacing: 0.02em;
 }
 
+/* Past columns use the same faint color as a completed task.
+   Hover restores the ordinary colors for that day only. */
+.tv-week .tv-day-card.is-past:not(:hover),
+.tv-week .tv-day-card.is-past:not(:hover) * {
+  color: var(--text-faint);
+}
+
+.tv-week .tv-day-card.is-past:not(:hover) .tv-day-done-bar {
+  background: var(--text-faint);
+}
+
 .tv-week .tv-day-card.is-today,
 .tv-week .tv-day-card.is-today:hover {
   transition: none;
