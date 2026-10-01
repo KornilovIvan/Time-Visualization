@@ -60,22 +60,6 @@
   transform: none;
 }
 
-.tv-today {
-  background: var(--background-primary) !important;
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border) !important;
-  box-shadow: none;
-  font-weight: 500;
-}
-
-.tv-today:hover,
-.tv-today:focus,
-.tv-today:active {
-  background: var(--background-primary) !important;
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border) !important;
-}
-
 .tv-levels {
   display: flex;
   align-items: center;
@@ -100,7 +84,7 @@
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  /* Match .tv-today typography when not selected */
+  /* Match .tv-btn typography when not selected */
   color: var(--text-normal) !important;
   cursor: pointer;
   font-size: 0.88em;

@@ -150,16 +150,8 @@ export class TimeVisualizationView extends ItemView {
       const affectedAfter = this.fileAffectsView(path);
       if (!affectedBefore && !affectedAfter) return;
       // Refill the active level's slides in place (without recreating the track)
-      if (this.track) {
-        const meta = getCarouselMeta(this, this.level);
-        const slides = Array.from(this.track.querySelectorAll<HTMLElement>("." + meta.slideCls));
-        for (const slide of slides) {
-          const key = slide.dataset.key;
-          if (key) meta.fill(slide, key);
-        }
-      } else {
-        this.render();
-      }
+      if (this.track) this.refillCurrent();
+      else this.render();
     }, 150);
   }
 
@@ -393,49 +385,18 @@ export class TimeVisualizationView extends ItemView {
     if (isMobileUi()) {
       // Full-width bottom bar: [←] [Today] [Settings] [→]
       controls.addClass("tv-mobile-bar");
-
-      const btnPrev = controls.createEl("button", {
-        cls: "tv-btn tv-nav-side",
-        attr: { "aria-label": "Previous" },
-      });
-      setIcon(btnPrev, "chevron-left");
-      btnPrev.addEventListener("click", () => this.navigate(-1));
-
+      this.addNavButton(controls, -1, "tv-nav-side");
       const mid = controls.createDiv({ cls: "tv-mobile-mid" });
-      const btnToday = mid.createEl("button", { cls: "tv-btn tv-today", text: "Today" });
-      btnToday.addEventListener("click", () => this.goToday());
-
-      const settingsBtn = mid.createEl("button", {
-        cls: "tv-btn tv-settings",
-        attr: { "aria-label": "Settings" },
-      });
-      setIcon(settingsBtn, "settings");
-      settingsBtn.addEventListener("click", () => {
-        const setting = (this.app as unknown as { setting?: { open(): void; openTabById(id: string): void } }).setting;
-        setting?.open();
-        setting?.openTabById(this.plugin.manifest.id);
-      });
-
-      const btnNext = controls.createEl("button", {
-        cls: "tv-btn tv-nav-side",
-        attr: { "aria-label": "Next" },
-      });
-      setIcon(btnNext, "chevron-right");
-      btnNext.addEventListener("click", () => this.navigate(1));
+      this.addTodayButton(mid);
+      this.addSettingsButton(mid);
+      this.addNavButton(controls, 1, "tv-nav-side");
       return;
     }
 
     const nav = controls.createDiv({ cls: "tv-nav" });
-    const btnPrev = nav.createEl("button", { cls: "tv-btn", attr: { "aria-label": "Previous" } });
-    setIcon(btnPrev, "chevron-left");
-    btnPrev.addEventListener("click", () => this.navigate(-1));
-
-    const btnToday = nav.createEl("button", { cls: "tv-btn tv-today", text: "Today" });
-    btnToday.addEventListener("click", () => this.goToday());
-
-    const btnNext = nav.createEl("button", { cls: "tv-btn", attr: { "aria-label": "Next" } });
-    setIcon(btnNext, "chevron-right");
-    btnNext.addEventListener("click", () => this.navigate(1));
+    this.addNavButton(nav, -1);
+    this.addTodayButton(nav);
+    this.addNavButton(nav, 1);
 
     const levels = controls.createDiv({ cls: "tv-levels" });
     const defs: Array<[Level, string]> = [
@@ -452,7 +413,25 @@ export class TimeVisualizationView extends ItemView {
       b.addEventListener("click", () => this.setLevel(lv, true));
     }
 
-    const settingsBtn = controls.createEl("button", {
+    this.addSettingsButton(controls);
+  }
+
+  private addNavButton(parent: HTMLElement, dir: 1 | -1, extraCls = ""): void {
+    const btn = parent.createEl("button", {
+      cls: extraCls ? `tv-btn ${extraCls}` : "tv-btn",
+      attr: { "aria-label": dir === -1 ? "Previous" : "Next" },
+    });
+    setIcon(btn, dir === -1 ? "chevron-left" : "chevron-right");
+    btn.addEventListener("click", () => this.navigate(dir));
+  }
+
+  private addTodayButton(parent: HTMLElement): void {
+    const btn = parent.createEl("button", { cls: "tv-btn tv-today", text: "Today" });
+    btn.addEventListener("click", () => this.goToday());
+  }
+
+  private addSettingsButton(parent: HTMLElement): void {
+    const settingsBtn = parent.createEl("button", {
       cls: "tv-btn tv-settings",
       attr: { "aria-label": "Settings" },
     });

@@ -35,13 +35,8 @@ export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date):
       text: `${MONTHS_EN[day.getMonth()].slice(0, 3)} ${day.getFullYear()}`,
     });
 
-    fillDayBody(view, card, day, true);
-    card.addEventListener("click", (ev) => {
-      if ((ev.target as HTMLElement).closest(".tv-task")) return;
-      if (view.isSelectionClick(ev)) return;
-      view.cursor = day;
-      view.setLevel("day");
-    });
+    fillDayBody(view, card, day);
+    openDayFromCard(view, card, day);
   }
 
   slide.appendChild(frag);
@@ -98,14 +93,8 @@ export function fillMonthSlide(view: ViewHost, slide: HTMLElement, first: Date):
     head.createSpan({ cls: "tv-day-num", text: String(day.getDate()) });
 
     // Only past days are collapsed (tasks built on click); today/future stay expanded
-    fillDayBody(view, cell, day, true, isPast);
-
-    cell.addEventListener("click", (ev) => {
-      if ((ev.target as HTMLElement).closest(".tv-task")) return;
-      if (view.isSelectionClick(ev)) return;
-      view.cursor = day;
-      view.setLevel("day");
-    });
+    fillDayBody(view, cell, day, isPast);
+    openDayFromCard(view, cell, day);
   }
   grid.appendChild(frag);
 }
@@ -137,16 +126,25 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
       view.openDayPriorityMenu(prioBtn, formatDate(day));
     });
   }
-  fillDayBody(view, card, day, false);
+  fillDayBody(view, card, day);
 }
 
-/** Shared day-card body: active-task list + done section. compact — smaller
-    sizes/fonts; collapsible — month mode: note groups are collapsed (lazy). */
+/** Clicking a week/month day card opens that day. Task clicks and drag-selections do not. */
+function openDayFromCard(view: ViewHost, card: HTMLElement, day: Date): void {
+  card.addEventListener("click", (ev) => {
+    if ((ev.target as HTMLElement).closest(".tv-task")) return;
+    if (view.isSelectionClick(ev)) return;
+    view.cursor = day;
+    view.setLevel("day");
+  });
+}
+
+/** Shared day-card body: active-task list + done section.
+    collapsible — month mode: note groups are collapsed (lazy). */
 export function fillDayBody(
   view: ViewHost,
   card: HTMLElement,
   day: Date,
-  compact: boolean,
   collapsible = false
 ): void {
   const key = formatDate(day);
@@ -162,8 +160,8 @@ export function fillDayBody(
     for (const g of sortedGroups(view.plugin.settings, active, key)) {
       // null timed = merged adjacent buckets — one header, no data-timed marker
       const bucket = g.timed === null ? undefined : g.timed;
-      if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, compact, "active", bucket);
-      else fillGroup(view, list, g.tasks, g.path, key, compact, bucket);
+      if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, "active", bucket);
+      else fillGroup(view, list, g.tasks, g.path, key, bucket);
     }
   }
 
@@ -175,8 +173,8 @@ export function fillDayBody(
   const doneList = doneSection.createDiv({ cls: "tv-day-done-list" });
   if (done.length > 0) {
     for (const g of groupDoneByCompletionRuns(done)) {
-      if (collapsible) buildCollapsedGroup(view, doneList, g.tasks, g.path, key, compact, "done");
-      else fillGroup(view, doneList, g.tasks, g.path, key, compact);
+      if (collapsible) buildCollapsedGroup(view, doneList, g.tasks, g.path, key, "done");
+      else fillGroup(view, doneList, g.tasks, g.path, key);
     }
   }
 }

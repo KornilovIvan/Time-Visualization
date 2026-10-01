@@ -71,9 +71,7 @@ export function syncActiveSection(slide: HTMLElement): void {
 export function flipMove(slide: HTMLElement, mutate: () => void): void {
   const els = Array.from(
     slide.querySelectorAll<HTMLElement>(
-      // Exclude the flying clone — it has its own animation and must not be
-      // pulled by the layout shift
-      ".tv-task:not(.tv-task-clone), .tv-day-group-title, .tv-day-active-title, .tv-day-done-title, .tv-day-done-bar"
+      ".tv-task, .tv-day-group-title, .tv-day-active-title, .tv-day-done-title, .tv-day-done-bar"
     )
   );
   const before = new Map<HTMLElement, number>();

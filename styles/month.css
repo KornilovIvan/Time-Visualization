@@ -102,10 +102,6 @@
   transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
-.tv-month-cell::-webkit-scrollbar {
-  display: none;
-}
-
 .tv-month .tv-day-card:hover {
   transform: scale(1.18);
   z-index: 5;

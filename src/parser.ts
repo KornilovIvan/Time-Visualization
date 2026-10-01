@@ -31,9 +31,11 @@ const TASK_RE = /^\s*(?:>\s*)*[-*]\s+\[( |x|X)\]\s+(.*)$/;
 // are allowed: [date :: 2026-08-05], [ date::2026-08-05 ]
 const INLINE_RE = /\[\s*(date|time)\s*::\s*([^\]]*)\]/g;
 
-// Completion marker [done:: <ISO>] — written on toggle, read in any format.
-// Same spacing as date/time fields.
-const DONE_RE = /\[\s*done\s*::\s*([^\]]*)\]/;
+/** [date :: value]. Not global — safe to reuse with test() and replace(). */
+export const LEGACY_DATE_FIELD_RE = /\[\s*date\s*::\s*[^\]]*\]/;
+
+/** [done :: value], capture group 1 is the value. Not global. */
+export const DONE_FIELD_RE = /\[\s*done\s*::\s*([^\]]*)\]/;
 
 // Tasks plugin fields: 📅 due date, ⏰ time
 const TASKS_DATE_RE = /📅\s*(\d{4}-\d{2}-\d{2})/;
@@ -100,7 +102,7 @@ export function parseTaskLine(
   }
 
   // Completion marker is format-independent — read it for all formats
-  text = text.replace(DONE_RE, (full, d: string) => {
+  text = text.replace(DONE_FIELD_RE, (full, d: string) => {
     const v = d.trim();
     if (v) done = v;
     return "";

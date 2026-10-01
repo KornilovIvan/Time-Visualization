@@ -174,22 +174,6 @@
   transform: none;
 }
 
-.tv-today {
-  background: var(--background-primary) !important;
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border) !important;
-  box-shadow: none;
-  font-weight: 500;
-}
-
-.tv-today:hover,
-.tv-today:focus,
-.tv-today:active {
-  background: var(--background-primary) !important;
-  color: var(--text-normal);
-  border-color: var(--background-modifier-border) !important;
-}
-
 .tv-levels {
   display: flex;
   align-items: center;
@@ -214,7 +198,7 @@
   border: none !important;
   background: transparent !important;
   box-shadow: none !important;
-  /* Match .tv-today typography when not selected */
+  /* Match .tv-btn typography when not selected */
   color: var(--text-normal) !important;
   cursor: pointer;
   font-size: 0.88em;
@@ -334,9 +318,6 @@
   background: transparent;
   border-right: 1px solid var(--background-modifier-border);
   overflow-y: auto;
-}
-.tv-week .tv-day-card::-webkit-scrollbar {
-  display: none;
 }
 .tv-week .tv-day-card:last-child {
   border-right: none;
@@ -635,10 +616,6 @@
   transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 160ms ease, opacity 160ms ease;
 }
 
-.tv-month-cell::-webkit-scrollbar {
-  display: none;
-}
-
 .tv-month .tv-day-card:hover {
   transform: scale(1.18);
   z-index: 5;
@@ -870,9 +847,6 @@
   overflow-y: auto;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
   transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
-}
-.tv-day-slide::-webkit-scrollbar {
-  display: none;
 }
 
 .tv-day-track .tv-day-slide:nth-child(2) {
@@ -1507,11 +1481,6 @@
 .tv-week-slide.tv-no-grow,
 .tv-month-slide.tv-no-grow {
   flex: none;
-}
-
-.tv-task-clone {
-  position: absolute;
-  pointer-events: none;
 }
 
 .tv-task.is-editing .tv-task-text {

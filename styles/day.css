@@ -36,9 +36,6 @@
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.04), 0 8px 12px rgba(0, 0, 0, 0.06);
   transition: transform 320ms ease, opacity 320ms ease, filter 320ms ease, box-shadow 320ms ease;
 }
-.tv-day-slide::-webkit-scrollbar {
-  display: none;
-}
 
 .tv-day-track .tv-day-slide:nth-child(2) {
   z-index: 2;

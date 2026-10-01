@@ -14,12 +14,11 @@ export function fillGroup(
   tasks: ParsedTask[],
   path: string,
   key: string,
-  compact: boolean,
   timed?: boolean
 ): void {
   const group = createTaskGroup(view, container, path, key, timed);
   const gl = group.querySelector(".tv-day-group-tasks") as HTMLElement;
-  for (const t of tasks) gl.appendChild(buildTaskRow(view, t, compact));
+  for (const t of tasks) gl.appendChild(buildTaskRow(view, t));
 }
 
 /** Collapsed note group (month): header + counter + chevron. Tasks are built
@@ -30,7 +29,6 @@ export function buildCollapsedGroup(
   tasks: ParsedTask[],
   path: string,
   key: string,
-  compact: boolean,
   section: "active" | "done",
   timed?: boolean
 ): HTMLElement {
@@ -79,7 +77,7 @@ export function buildCollapsedGroup(
           if (wantTimed === "0") return !t.time;
           return true;
         });
-      for (const t of fresh) gl.appendChild(buildTaskRow(view, t, compact));
+      for (const t of fresh) gl.appendChild(buildTaskRow(view, t));
     }
   });
 
@@ -87,8 +85,7 @@ export function buildCollapsedGroup(
 }
 
 /** Custom checkbox: the check mark is drawn via a stroke animation */
-export function renderCheckbox(box: HTMLElement, compact: boolean): void {
-  void compact; // visually identical; compactness comes from the CSS size
+export function renderCheckbox(box: HTMLElement): void {
   const ns = "http://www.w3.org/2000/svg";
   const svg = document.createElementNS(ns, "svg");
   svg.setAttribute("viewBox", "0 0 24 24");
@@ -118,14 +115,14 @@ export function renderCheckbox(box: HTMLElement, compact: boolean): void {
   box.appendChild(svg);
 }
 
-export function buildTaskRow(view: ViewHost, t: ParsedTask, compact: boolean): HTMLElement {
+export function buildTaskRow(view: ViewHost, t: ParsedTask): HTMLElement {
   const row = createDiv();
   row.className = "tv-task" + (t.checked ? " is-done" : "");
 
   const box = row.createEl("button", {
     cls: "tv-task-box" + (t.checked ? " is-checked" : ""),
   });
-  renderCheckbox(box, compact);
+  renderCheckbox(box);
 
   const taskKey = `${t.filePath}:${t.line}`;
   row.dataset.taskKey = taskKey;

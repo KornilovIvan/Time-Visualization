@@ -10,11 +10,6 @@
   flex: none;
 }
 
-.tv-task-clone {
-  position: absolute;
-  pointer-events: none;
-}
-
 .tv-task.is-editing .tv-task-text {
   display: none;
 }

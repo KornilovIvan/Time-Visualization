@@ -1,6 +1,6 @@
 import { TFile } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
-import { parseTaskLine, type ParsedTask } from "./parser";
+import { DONE_FIELD_RE, LEGACY_DATE_FIELD_RE, parseTaskLine, type ParsedTask } from "./parser";
 
 /** File writes for tasks. Kept separate from TaskIndex (read/cache only). */
 
@@ -111,7 +111,7 @@ export async function toggleTask(
     if (checked) {
       // Returning the task to open — turn [done:: ...] back into [date:: ...]
       // so the date is restored and fields never duplicate
-      const doneRe = /\[\s*done\s*::\s*([^\]]*)\]/;
+      const doneRe = DONE_FIELD_RE;
       const dm = doneRe.exec(lines[lineIndex]);
       if (dm) {
         const doneVal = dm[1].trim();
@@ -128,7 +128,7 @@ export async function toggleTask(
       // old behavior and just append the marker.
       const now = new Date().toISOString();
       if (task.format === "legacy") {
-        const dateRe = /\[\s*date\s*::\s*[^\]]*\]/;
+        const dateRe = LEGACY_DATE_FIELD_RE;
         if (dateRe.test(lines[lineIndex])) {
           lines[lineIndex] = lines[lineIndex].replace(dateRe, `[done:: ${now}]`);
         } else {
@@ -137,7 +137,7 @@ export async function toggleTask(
       } else {
         lines[lineIndex] =
           lines[lineIndex]
-            .replace(/\[\s*done\s*::\s*[^\]]*\]/g, "")
+            .replace(new RegExp(DONE_FIELD_RE.source, "g"), "")
             .replace(/(?:\s*\|)+\s*$/g, "")
             .trimEnd() + ` |[done:: ${now}]`;
       }
@@ -173,7 +173,7 @@ export async function moveTask(
       lines[lineIndex] = line.trimEnd() + ` 📅 ${newDate}`;
     }
   } else {
-    const dateRe = /\[\s*date\s*::\s*[^\]]*\]/;
+    const dateRe = LEGACY_DATE_FIELD_RE;
     if (dateRe.test(line)) {
       lines[lineIndex] = line.replace(dateRe, `[date:: ${newDate}]`);
     } else {
