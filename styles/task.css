@@ -23,11 +23,13 @@
   top: 5px;
   z-index: 2;
   display: none;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
-  min-width: 28px;
-  /* Same top inset as .tv-task-box so the icon lines up with the checkbox glyph */
-  padding: 2px 4px 0;
+  box-sizing: border-box;
+  width: 26px;
+  height: 26px;
+  padding: 0 !important;
+  line-height: 0;
   border-radius: 6px;
   background: transparent !important;
   border: none !important;
@@ -39,8 +41,10 @@
 }
 
 .tv-task-menu svg {
-  width: 1.35em;
-  height: 1.35em;
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: none;
 }
 
 .tv-task-menu:hover,
