@@ -1,3 +1,4 @@
+import { setIcon } from "obsidian";
 import { formatDate } from "./parser";
 import {
   MONTHS_EN,
@@ -113,19 +114,6 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
     text: `${MONTHS_EN[day.getMonth()]} ${day.getFullYear()}`,
   });
   const tools = head.createDiv({ cls: "tv-day-tools" });
-  const clockBtn = tools.createEl("button", {
-    cls: "tv-day-clock-btn" + (view.clockOpen ? " is-on" : ""),
-    attr: {
-      "aria-label": view.clockOpen ? "Hide the day clock" : "Show the day clock",
-      "aria-pressed": view.clockOpen ? "true" : "false",
-    },
-  });
-  clockBtn.setText("Clock");
-  clockBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    view.toggleDayClock();
-  });
   // Priority/reorder button in the day header (desktop only; shown on hover)
   if (!isMobileUi()) {
     const prioBtn = tools.createEl("button", {
@@ -141,11 +129,22 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
       view.openDayPriorityMenu(prioBtn, formatDate(day));
     });
   }
+  const clockBtn = tools.createEl("button", {
+    cls: "tv-day-clock-btn" + (view.clockOpen ? " is-on" : ""),
+    attr: {
+      "aria-label": view.clockOpen ? "Hide the day clock" : "Show the day clock",
+      "aria-pressed": view.clockOpen ? "true" : "false",
+    },
+  });
+  setIcon(clockBtn, "clock");
+  clockBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    view.toggleDayClock();
+  });
   if (view.clockOpen) {
     const holder = card.createDiv({ cls: "tv-day-clock" });
-    renderDayClock(holder, day, view.tasksForDay(formatDate(day)), view.clockMode, (mode) =>
-      view.setClockMode(mode)
-    );
+    renderDayClock(holder, day, view.tasksForDay(formatDate(day)));
   }
   fillDayBody(view, card, day);
 }

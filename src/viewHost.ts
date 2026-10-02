@@ -2,7 +2,6 @@ import type { App } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
 import type { TaskIndex } from "./taskIndex";
 import type { ParsedTask } from "./parser";
-import type { ClockMode } from "./clock";
 
 export type Level = "day" | "week" | "month";
 
@@ -35,12 +34,9 @@ export interface ViewHost {
   noteFilterAnchor: HTMLElement | null;
   /** Day dial is open on the day cards. */
   clockOpen: boolean;
-  /** Which face the day dial draws. */
-  clockMode: ClockMode;
 
   tasksForDay(date: string): ParsedTask[];
   toggleDayClock(): void;
-  setClockMode(mode: ClockMode): void;
   toggleNoteFilter(path: string): void;
   clearNoteFilter(): void;
   setLevel(level: Level, resetToToday?: boolean): void;

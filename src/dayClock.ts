@@ -1,32 +1,61 @@
 /**
- * Day-dial DOM. One SVG per day card: tick field, two task rings, a sweeping
- * now-needle with a short radar trail. The view calls paintDayClocks on a timer.
+ * Day-dial DOM. One SVG per day card: tick field, task rings, and a red
+ * stripe at the current time. The view calls paintDayClocks on a timer.
  */
 
 import { formatDate } from "./parser";
 import {
   CLOCK,
-  CLOCK_MODES,
+  FACE_CYCLE,
   arcPath,
-  eventsForMode,
-  faceCycle,
+  eventsForClock,
   formatHMS,
   handAngles,
   minutesOf,
   polar,
-  sectorPath,
   shortLabel,
   spanIsPast,
   type ClockEvent,
-  type ClockMode,
   type ClockTask,
 } from "./clock";
 
 const SVG_NS = "http://www.w3.org/2000/svg";
-const GLOW_STEPS = 5;
 
 function svgEl<K extends keyof SVGElementTagNameMap>(name: K): SVGElementTagNameMap[K] {
   return document.createElementNS(SVG_NS, name);
+}
+
+/** Stripe across the ring of the current half-day. */
+function nowRadii(nowMin: number): { stemIn: number; stemOut: number } {
+  const edge = CLOCK.laneStroke / 2 + 2;
+  const ring = nowMin % 1440 < 720 ? CLOCK.laneInner : CLOCK.laneOuter;
+  return { stemIn: ring - edge, stemOut: ring + edge };
+}
+
+function nowMarkEl(): SVGGElement {
+  const group = svgEl("g");
+  group.setAttribute("class", "tv-clock-now");
+  const stemHalo = svgEl("line");
+  stemHalo.setAttribute("class", "tv-clock-now-stem-halo");
+  const stem = svgEl("line");
+  stem.setAttribute("class", "tv-clock-now-stem");
+  group.appendChild(stemHalo);
+  group.appendChild(stem);
+  return group;
+}
+
+function placeNowMark(mark: Element, nowMin: number): void {
+  const faceNow = nowMin % FACE_CYCLE;
+  const { stemIn, stemOut } = nowRadii(nowMin);
+  const [x0, y0] = polar(CLOCK.cx, CLOCK.cy, stemIn, faceNow, FACE_CYCLE);
+  const [x1, y1] = polar(CLOCK.cx, CLOCK.cy, stemOut, faceNow, FACE_CYCLE);
+  for (const selector of [".tv-clock-now-stem-halo", ".tv-clock-now-stem"]) {
+    const line = mark.querySelector(selector);
+    line?.setAttribute("x1", x0.toFixed(2));
+    line?.setAttribute("y1", y0.toFixed(2));
+    line?.setAttribute("x2", x1.toFixed(2));
+    line?.setAttribute("y2", y1.toFixed(2));
+  }
 }
 
 let faceSeq = 0;
@@ -34,24 +63,19 @@ let faceSeq = 0;
 export function renderDayClock(
   host: HTMLElement,
   day: Date,
-  tasks: readonly ClockTask[],
-  mode: ClockMode,
-  onMode: (mode: ClockMode) => void
+  tasks: readonly ClockTask[]
 ): void {
   const key = formatDate(day);
   host.dataset.date = key;
   host.empty();
   hideClockTip();
 
-  const cycle = faceCycle(mode);
-  const events = eventsForMode(tasks, mode);
+  const events = eventsForClock(tasks);
   const svg = svgEl("svg");
   svg.setAttribute("class", "tv-clock-face");
   svg.setAttribute("viewBox", `0 0 ${CLOCK.size} ${CLOCK.size}`);
   svg.setAttribute("role", "img");
-  svg.setAttribute("aria-label", mode === "24" ? "Day clock" : "Clock");
-  svg.dataset.mode = mode;
-  if (mode !== "24") svg.classList.add("is-analog");
+  svg.setAttribute("aria-label", "Clock");
   const gradId = `tv-dial-${++faceSeq}`;
 
   const defs = svgEl("defs");
@@ -81,9 +105,7 @@ export function renderDayClock(
   disc.setAttribute("fill", `url(#${gradId})`);
   svg.appendChild(disc);
 
-  const showInner =
-    mode !== "12" || events.some((event) => event.draws.some((draw) => draw.lane === 1));
-  for (const radius of showInner ? [CLOCK.laneOuter, CLOCK.laneInner] : [CLOCK.laneOuter]) {
+  for (const radius of [CLOCK.laneOuter, CLOCK.laneInner]) {
     const guide = svgEl("circle");
     guide.setAttribute("class", "tv-clock-guide");
     guide.setAttribute("cx", String(CLOCK.cx));
@@ -92,12 +114,12 @@ export function renderDayClock(
     svg.appendChild(guide);
   }
 
-  for (let minute = 0; minute < cycle; minute += 5) {
+  for (let minute = 0; minute < FACE_CYCLE; minute += 5) {
     const hour = minute % 60 === 0;
     const quarter = minute % 15 === 0;
     const inner = hour ? CLOCK.hourIn : quarter ? CLOCK.quarterIn : CLOCK.fiveIn;
-    const [x0, y0] = polar(CLOCK.cx, CLOCK.cy, inner, minute, cycle);
-    const [x1, y1] = polar(CLOCK.cx, CLOCK.cy, CLOCK.tickOut, minute, cycle);
+    const [x0, y0] = polar(CLOCK.cx, CLOCK.cy, inner, minute, FACE_CYCLE);
+    const [x1, y1] = polar(CLOCK.cx, CLOCK.cy, CLOCK.tickOut, minute, FACE_CYCLE);
     const tick = svgEl("line");
     tick.setAttribute("class", "tv-clock-tick" + (hour ? " is-hour" : quarter ? " is-quarter" : ""));
     tick.setAttribute("x1", x0.toFixed(2));
@@ -107,46 +129,24 @@ export function renderDayClock(
     svg.appendChild(tick);
   }
 
-  if (mode === "24") {
-    for (let hour = 0; hour < 24; hour += 3) {
-      const [x, y] = polar(CLOCK.cx, CLOCK.cy, CLOCK.labelR, hour * 60, cycle);
-      const label = svgEl("text");
-      label.setAttribute("class", "tv-clock-label");
-      label.setAttribute("x", x.toFixed(2));
-      label.setAttribute("y", y.toFixed(2));
-      label.textContent = String(hour).padStart(2, "0");
-      svg.appendChild(label);
-    }
-  } else {
-    for (let hour = 0; hour < 12; hour++) {
-      const [x, y] = polar(CLOCK.cx, CLOCK.cy, CLOCK.labelR, hour * 60, cycle);
-      const label = svgEl("text");
-      label.setAttribute("class", "tv-clock-label");
-      label.setAttribute("x", x.toFixed(2));
-      label.setAttribute("y", y.toFixed(2));
-      label.textContent = hour === 0 ? "12" : String(hour);
-      svg.appendChild(label);
-    }
+  for (let hour = 0; hour < 12; hour++) {
+    const [x, y] = polar(CLOCK.cx, CLOCK.cy, CLOCK.labelR, hour * 60, FACE_CYCLE);
+    const label = svgEl("text");
+    label.setAttribute("class", "tv-clock-label");
+    label.setAttribute("x", x.toFixed(2));
+    label.setAttribute("y", y.toFixed(2));
+    label.textContent = hour === 0 ? "12" : String(hour);
+    svg.appendChild(label);
   }
 
   const ordered = events.slice().sort((a, b) => b.lane - a.lane || a.start - b.start);
-  for (const event of ordered) svg.appendChild(blockEl(event, cycle));
+  for (const event of ordered) svg.appendChild(blockEl(event, FACE_CYCLE));
 
-  const glow = svgEl("g");
-  glow.setAttribute("class", "tv-clock-glow");
-  for (let i = 0; i < GLOW_STEPS; i++) {
-    const step = svgEl("path");
-    step.setAttribute("class", "tv-clock-glow-step");
-    step.dataset.step = String(i);
-    glow.appendChild(step);
-  }
-  svg.appendChild(glow);
-
-  svg.appendChild(dialHand("tv-clock-needle", CLOCK.needleIn, CLOCK.needleOut, true));
-  svg.appendChild(hourHand());
-  svg.appendChild(minuteHand());
-  svg.appendChild(secondHand());
-  svg.appendChild(pivot());
+  const nowMark = nowMarkEl();
+  const drawnAt = new Date();
+  if (key === formatDate(drawnAt)) placeNowMark(nowMark, minutesOf(drawnAt));
+  else nowMark.classList.add("is-hidden");
+  svg.appendChild(nowMark);
 
   const isToday = key === formatDate(new Date());
   const time = svgEl("text");
@@ -155,21 +155,12 @@ export function renderDayClock(
   time.setAttribute("y", String(CLOCK.cy - 36));
   time.textContent = isToday ? formatHMS(new Date()) : "";
   svg.appendChild(time);
-  host.appendChild(svg);
 
-  const modes = host.createDiv({ cls: "tv-clock-modes" });
-  for (const [id, label] of CLOCK_MODES) {
-    const btn = modes.createEl("button", {
-      cls: "tv-clock-mode" + (id === mode ? " is-on" : ""),
-      attr: { type: "button", "aria-pressed": id === mode ? "true" : "false" },
-    });
-    btn.setText(label);
-    btn.addEventListener("click", (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      onMode(id);
-    });
-  }
+  svg.appendChild(hourHand());
+  svg.appendChild(minuteHand());
+  svg.appendChild(secondHand());
+  svg.appendChild(pivot());
+  host.appendChild(svg);
   paintDayClocks(host);
 }
 
@@ -252,25 +243,6 @@ function shapedHand(cls: string, points: Array<[number, number]>): SVGGElement {
   return hand;
 }
 
-function dialHand(cls: string, inner: number, outer: number, tip: boolean): SVGGElement {
-  const hand = svgEl("g");
-  hand.setAttribute("class", cls);
-  const line = svgEl("line");
-  line.setAttribute("x1", String(CLOCK.cx));
-  line.setAttribute("y1", String(CLOCK.cy - inner));
-  line.setAttribute("x2", String(CLOCK.cx));
-  line.setAttribute("y2", String(CLOCK.cy - outer));
-  hand.appendChild(line);
-  if (tip) {
-    const dot = svgEl("circle");
-    dot.setAttribute("cx", String(CLOCK.cx));
-    dot.setAttribute("cy", String(CLOCK.cy - outer));
-    dot.setAttribute("r", "2.4");
-    hand.appendChild(dot);
-  }
-  return hand;
-}
-
 function blockEl(event: ClockEvent, cycle: number): SVGGElement {
   const group = svgEl("g");
   group.setAttribute("class", "tv-clock-block" + (event.ranged ? "" : " is-point") + (event.done ? " is-done" : ""));
@@ -281,13 +253,6 @@ function blockEl(event: ClockEvent, cycle: number): SVGGElement {
 
   for (const draw of event.draws) {
     const radius = draw.lane === 1 ? CLOCK.laneInner : CLOCK.laneOuter;
-    const edgeR = radius + CLOCK.laneStroke / 2 - 0.4;
-    const edge = svgEl("path");
-    edge.setAttribute("class", "tv-clock-edge");
-    edge.setAttribute("d", arcPath(CLOCK.cx, CLOCK.cy, edgeR, draw.start, draw.end, cycle));
-    edge.setAttribute("stroke", event.color);
-    group.appendChild(edge);
-
     const arc = svgEl("path");
     arc.setAttribute("class", "tv-clock-arc");
     arc.setAttribute("d", arcPath(CLOCK.cx, CLOCK.cy, radius, draw.start, draw.end, cycle));
@@ -344,26 +309,17 @@ export function paintDayClocks(root: ParentNode, now = new Date()): void {
     if (!svg) continue;
     const isToday = host.dataset.date === today;
     const dayKey = host.dataset.date ?? "";
-    const mode: ClockMode = svg.dataset.mode === "12" || svg.dataset.mode === "rows" ? svg.dataset.mode : "24";
-    const analog = mode !== "24";
-    const cycle = faceCycle(mode);
-    const needle = svg.querySelector(".tv-clock-needle");
     const hourEl = svg.querySelector(".tv-clock-hour");
     const minuteEl = svg.querySelector(".tv-clock-minute");
     const secondEl = svg.querySelector(".tv-clock-second");
     const boss = svg.querySelector(".tv-clock-boss-wrap");
-    const glow = svg.querySelector(".tv-clock-glow");
-    needle?.classList.toggle("is-hidden", !isToday || analog);
-    hourEl?.classList.toggle("is-hidden", !isToday || !analog);
-    minuteEl?.classList.toggle("is-hidden", !isToday || !analog);
-    secondEl?.classList.toggle("is-hidden", !isToday || !analog);
-    boss?.classList.toggle("is-hidden", !isToday || !analog);
-    glow?.classList.toggle("is-hidden", !isToday);
-    if (isToday && !analog && needle) {
-      const deg = (nowMin / 1440) * 360;
-      needle.setAttribute("transform", `rotate(${deg.toFixed(3)} ${CLOCK.cx} ${CLOCK.cy})`);
-    }
-    if (isToday && analog) {
+    const nowMark = svg.querySelector(".tv-clock-now");
+    hourEl?.classList.toggle("is-hidden", !isToday);
+    minuteEl?.classList.toggle("is-hidden", !isToday);
+    secondEl?.classList.toggle("is-hidden", !isToday);
+    boss?.classList.toggle("is-hidden", !isToday);
+    nowMark?.classList.toggle("is-hidden", !isToday);
+    if (isToday) {
       const angles = handAngles(now);
       const turn = (el: Element | null, deg: number): void => {
         el?.setAttribute("transform", `rotate(${deg.toFixed(3)} ${CLOCK.cx} ${CLOCK.cy})`);
@@ -372,21 +328,7 @@ export function paintDayClocks(root: ParentNode, now = new Date()): void {
       turn(minuteEl, angles.minute);
       turn(secondEl, angles.second);
     }
-    if (isToday && glow) {
-      const faceNow = analog ? nowMin % cycle : nowMin;
-      const tail = CLOCK.glowTail * (cycle / 1440);
-      const morning = nowMin % 1440 < 720;
-      const glowRadius = mode === "rows" ? (morning ? CLOCK.laneInner : CLOCK.laneOuter) : 0;
-      const r0 = mode === "rows" ? glowRadius - 10 : CLOCK.glowIn;
-      const r1 = mode === "rows" ? glowRadius + 10 : CLOCK.glowOut;
-      const steps = glow.querySelectorAll<SVGPathElement>(".tv-clock-glow-step");
-      steps.forEach((step, i) => {
-        const from = faceNow - tail * (1 - i / GLOW_STEPS);
-        const to = faceNow - tail * (1 - (i + 1) / GLOW_STEPS);
-        step.setAttribute("d", sectorPath(CLOCK.cx, CLOCK.cy, r0, r1, from, to, cycle));
-        step.setAttribute("opacity", (0.04 + (i / (GLOW_STEPS - 1)) * 0.22).toFixed(3));
-      });
-    }
+    if (isToday && nowMark) placeNowMark(nowMark, nowMin);
 
     if (host.dataset.paintedMinute !== String(minute) || host.dataset.paintedDay !== today) {
       host.dataset.paintedMinute = String(minute);

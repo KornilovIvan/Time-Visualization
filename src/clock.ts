@@ -1,12 +1,8 @@
 /**
- * Dial geometry. Midnight (24h) or 12 (12h) is at the top; minutes run clockwise.
+ * Dial geometry. 12 is at the top; minutes run clockwise.
  * A bare `HH:MM` is a short mark. `HH:MM-HH:MM` (hyphen or dash) is an arc.
- *
- * Modes:
- *   24   — one day around the rim; overlaps step inward
- *   12   — an ordinary 12-hour face; tasks share that rim
- *   rows — the same 12-hour face, morning on the inner ring and
- *          afternoon on the outer, so the whole day fits in two rows
+ * Morning sits on the inner ring and afternoon on the outer, so one
+ * 12-hour face holds the whole day.
  */
 
 const POINT_MINUTES = 8;
@@ -34,12 +30,10 @@ export const CLOCK = {
   laneOuter: 138,
   laneInner: 114,
   laneStroke: 16,
-  needleIn: 58,
-  needleOut: 166,
-  glowIn: 104,
-  glowOut: 171,
-  glowTail: 26,
 } as const;
+
+/** One turn of the 12-hour face, in minutes. */
+export const FACE_CYCLE = 720;
 
 export interface ClockSpan {
   /** Minutes from midnight. May exceed 1440 when the range crosses midnight. */
@@ -56,16 +50,7 @@ export interface ClockTask {
   checked: boolean;
 }
 
-/** 24 = day dial, 12 = ordinary clock, rows = 12-hour face with two task rings. */
-export type ClockMode = "24" | "12" | "rows";
-
-export const CLOCK_MODES: ReadonlyArray<[ClockMode, string]> = [
-  ["24", "24h"],
-  ["12", "12h"],
-  ["rows", "2 rows"],
-];
-
-/** One painted arc. `start`/`end` are minutes on the face (0–1440 or 0–720). */
+/** One painted arc. `start`/`end` are minutes on the 12-hour face (0–720). */
 export interface ClockDraw {
   start: number;
   end: number;
@@ -111,53 +96,12 @@ export function parseClockSpan(time: string | undefined): ClockSpan | null {
   return { start, end, ranged: true };
 }
 
-function pieces(span: { start: number; end: number }): Array<[number, number]> {
-  if (span.end <= 1440) return [[span.start, span.end]];
-  const out: Array<[number, number]> = [];
-  if (span.start < 1440) out.push([span.start, 1440]);
-  const tail = span.end - 1440;
-  if (tail > 0) out.push([0, tail]);
-  return out;
-}
-
-function rangesOverlap(
-  a: { start: number; end: number },
-  b: { start: number; end: number }
-): boolean {
-  for (const pa of pieces(a)) {
-    for (const pb of pieces(b)) {
-      if (pa[0] < pb[1] && pb[0] < pa[1]) return true;
-    }
-  }
-  return false;
-}
-
-/** Lane 0 is the outer ring. A span moves inward only when it overlaps one already there. */
-export function assignLanes(spans: ReadonlyArray<{ start: number; end: number }>): number[] {
-  const lanes = spans.map(() => 0);
-  const occupied: Array<Array<{ start: number; end: number }>> = [[], []];
-  const order = spans
-    .map((_, i) => i)
-    .sort((a, b) => spans[a].start - spans[b].start || spans[a].end - spans[b].end);
-  for (const i of order) {
-    const span = spans[i];
-    const lane = occupied[0].some((other) => rangesOverlap(other, span)) ? 1 : 0;
-    lanes[i] = lane;
-    occupied[lane].push(span);
-  }
-  return lanes;
-}
-
 export function colorForPath(path: string): string {
   let hash = 0;
   for (let i = 0; i < path.length; i++) {
     hash = (Math.imul(hash, 31) + path.charCodeAt(i)) | 0;
   }
   return PALETTE[(hash >>> 0) % PALETTE.length];
-}
-
-export function faceCycle(mode: ClockMode): number {
-  return mode === "24" ? 1440 : 720;
 }
 
 /** Map a span onto one turn of `cycle`. A full turn becomes two semicircles. */
@@ -203,25 +147,6 @@ function drawsForRows(span: ClockSpan): ClockDraw[] {
   return out;
 }
 
-function assignFaceLanes(spans: ClockSpan[], cycle: number): number[] {
-  const faces = spans.map((span) => facePieces(span.start, span.end, cycle));
-  const lanes = spans.map(() => 0);
-  const occupied: Array<Array<[number, number]>> = [[], []];
-  const order = spans
-    .map((_, i) => i)
-    .sort((a, b) => spans[a].start - spans[b].start || spans[a].end - spans[b].end);
-  for (const i of order) {
-    const pieces = faces[i];
-    const hit = occupied[0].some((other) =>
-      pieces.some((piece) => piece[0] < other[1] && other[0] < piece[1])
-    );
-    const lane: 0 | 1 = hit ? 1 : 0;
-    lanes[i] = lane;
-    occupied[lane].push(...pieces);
-  }
-  return lanes;
-}
-
 function eventFrom(
   task: ClockTask,
   span: ClockSpan,
@@ -241,36 +166,16 @@ function eventFrom(
   };
 }
 
-export function eventsForMode(tasks: readonly ClockTask[], mode: ClockMode): ClockEvent[] {
-  const parsed: Array<{ task: ClockTask; span: ClockSpan }> = [];
+export function eventsForClock(tasks: readonly ClockTask[]): ClockEvent[] {
+  const out: ClockEvent[] = [];
   for (const task of tasks) {
     const span = parseClockSpan(task.time);
-    if (span) parsed.push({ task, span });
+    if (!span) continue;
+    const draws = drawsForRows(span);
+    const lane = draws[0]?.lane === 1 ? 1 : 0;
+    out.push(eventFrom(task, span, lane, draws));
   }
-  if (mode === "rows") {
-    return parsed.map((item) => {
-      const draws = drawsForRows(item.span);
-      const lane = draws[0]?.lane === 1 ? 1 : 0;
-      return eventFrom(item.task, item.span, lane, draws);
-    });
-  }
-  const cycle = faceCycle(mode);
-  const lanes =
-    mode === "24"
-      ? assignLanes(parsed.map((item) => item.span))
-      : assignFaceLanes(parsed.map((item) => item.span), cycle);
-  return parsed.map((item, i) => {
-    const lane: 0 | 1 = lanes[i] === 1 ? 1 : 0;
-    const draws: ClockDraw[] = [];
-    for (const [start, end] of facePieces(item.span.start, item.span.end, cycle)) {
-      pushDraw(draws, start, end, lane, cycle);
-    }
-    return eventFrom(item.task, item.span, lane, draws);
-  });
-}
-
-export function eventsForClock(tasks: readonly ClockTask[]): ClockEvent[] {
-  return eventsForMode(tasks, "24");
+  return out;
 }
 
 /** True when this span has already finished on a today-dial. */
@@ -326,26 +231,6 @@ export function arcPath(
   const [x1, y1] = polar(cx, cy, r, endMin, cycle);
   const large = sweep > cycle / 2 ? 1 : 0;
   return `M ${fmt(x0)} ${fmt(y0)} A ${r} ${r} 0 ${large} 1 ${fmt(x1)} ${fmt(y1)}`;
-}
-
-/** Ring sector from startMin to endMin, between two radii. Angles may be negative. */
-export function sectorPath(
-  cx: number,
-  cy: number,
-  rInner: number,
-  rOuter: number,
-  startMin: number,
-  endMin: number,
-  cycle = 1440
-): string {
-  const sweep = endMin - startMin;
-  if (sweep <= 0.05) return "";
-  const [x0, y0] = polar(cx, cy, rOuter, startMin, cycle);
-  const [x1, y1] = polar(cx, cy, rOuter, endMin, cycle);
-  const [x2, y2] = polar(cx, cy, rInner, endMin, cycle);
-  const [x3, y3] = polar(cx, cy, rInner, startMin, cycle);
-  const large = sweep > cycle / 2 ? 1 : 0;
-  return `M ${fmt(x0)} ${fmt(y0)} A ${rOuter} ${rOuter} 0 ${large} 1 ${fmt(x1)} ${fmt(y1)} L ${fmt(x2)} ${fmt(y2)} A ${rInner} ${rInner} 0 ${large} 0 ${fmt(x3)} ${fmt(y3)} Z`;
 }
 
 /**

@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   arcPieces,
-  assignLanes,
   eventsForClock,
-  eventsForMode,
   facePieces,
   formatHMS,
   handAngles,
@@ -33,34 +31,6 @@ describe("parseClockSpan", () => {
     expect(parseClockSpan("")).toBeNull();
     expect(parseClockSpan("24:00")).toBeNull();
     expect(parseClockSpan("morning")).toBeNull();
-  });
-});
-
-describe("assignLanes", () => {
-  it("keeps back-to-back spans on the outer ring", () => {
-    expect(
-      assignLanes([
-        { start: 540, end: 600 },
-        { start: 600, end: 660 },
-      ])
-    ).toEqual([0, 0]);
-  });
-
-  it("moves an overlap onto the inner ring", () => {
-    expect(
-      assignLanes([
-        { start: 540, end: 660 },
-        { start: 600, end: 720 },
-      ])
-    ).toEqual([0, 1]);
-  });
-
-  it("treats a midnight wrap as overlapping the early morning", () => {
-    const lanes = assignLanes([
-      { start: 1380, end: 1500 },
-      { start: 30, end: 90 },
-    ]);
-    expect(lanes).toEqual([1, 0]);
   });
 });
 
@@ -130,14 +100,11 @@ describe("arc geometry", () => {
   });
 
   it("lays morning on the inner row and afternoon on the outer", () => {
-    const events = eventsForMode(
-      [
-        { time: "09:00-10:00", text: "Morning", filePath: "A.md", checked: false },
-        { time: "15:00-16:00", text: "Afternoon", filePath: "B.md", checked: false },
-        { time: "11:30-12:30", text: "Noon", filePath: "C.md", checked: false },
-      ],
-      "rows"
-    );
+    const events = eventsForClock([
+      { time: "09:00-10:00", text: "Morning", filePath: "A.md", checked: false },
+      { time: "15:00-16:00", text: "Afternoon", filePath: "B.md", checked: false },
+      { time: "11:30-12:30", text: "Noon", filePath: "C.md", checked: false },
+    ]);
     expect(events[0].draws).toEqual([{ start: 540, end: 600, lane: 1 }]);
     expect(events[1].draws).toEqual([{ start: 180, end: 240, lane: 0 }]);
     expect(events[2].draws).toEqual([
@@ -146,26 +113,13 @@ describe("arc geometry", () => {
     ]);
   });
 
-  it("stacks 9am and 9pm on the two rings of a 12-hour clock", () => {
-    const events = eventsForMode(
-      [
-        { time: "09:00-10:00", text: "Morning", filePath: "A.md", checked: false },
-        { time: "21:00-22:00", text: "Night", filePath: "B.md", checked: false },
-      ],
-      "12"
-    );
-    expect(events.map((event) => event.lane)).toEqual([0, 1]);
-    expect(events[0].draws[0]).toMatchObject({ start: 540, end: 600 });
-    expect(events[1].draws[0]).toMatchObject({ start: 540, end: 600, lane: 1 });
-  });
-
-  it("builds one event per timed task and parks the overlap inside", () => {
+  it("keeps timed tasks and drops a task with no time", () => {
     const events = eventsForClock([
       { time: "09:00-11:00", text: "Write", filePath: "A.md", checked: false },
       { time: "10:00-12:00", text: "Call", filePath: "B.md", checked: false },
       { time: undefined, text: "Anytime", filePath: "A.md", checked: false },
     ]);
     expect(events.map((event) => event.label)).toEqual(["Write", "Call"]);
-    expect(events.map((event) => event.lane)).toEqual([0, 1]);
+    expect(events.map((event) => event.lane)).toEqual([1, 1]);
   });
 });
