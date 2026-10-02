@@ -3,6 +3,7 @@ layout.css
 week.css
 month.css
 day.css
+clock.css
 priority.css
 day-content.css
 task.css

@@ -24,6 +24,8 @@ import {
 } from "./menus";
 import { toggleTask } from "./taskWriter";
 import { isMobileUi } from "./platform";
+import { paintDayClocks } from "./dayClock";
+import type { ClockMode } from "./clock";
 
 export { VIEW_TYPE, type Level } from "./viewHost";
 
@@ -66,6 +68,12 @@ export class TimeVisualizationView extends ItemView {
   noteFilterMenu: HTMLElement | null = null;
   noteFilterAnchor: HTMLElement | null = null;
   private noteFilterBtn: HTMLElement | null = null;
+  /** Day dial shown above the task list. Stays on while swiping days. */
+  clockOpen = false;
+  /** 24h day dial, ordinary 12h clock, or 12h with two task rows. */
+  clockMode: ClockMode = "24";
+  private clockFrame: number | null = null;
+  private clockTimer: number | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: TimeVisualizationPlugin) {
     super(leaf);
@@ -102,6 +110,7 @@ export class TimeVisualizationView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    this.stopClockMotion();
     if (this.suppressTimer !== null) window.clearTimeout(this.suppressTimer);
     if (this.carouselAnim) {
       this.carouselAnim.cancel();
@@ -392,6 +401,48 @@ export class TimeVisualizationView extends ItemView {
       [{ opacity: 0.3 }, { opacity: 1 }],
       { duration: 160, easing: "ease-out" }
     );
+    this.syncClockMotion();
+  }
+
+  toggleDayClock(): void {
+    this.clockOpen = !this.clockOpen;
+    if (this.track) this.refillCurrent();
+    this.syncClockMotion();
+  }
+
+  setClockMode(mode: ClockMode): void {
+    if (this.clockMode === mode) return;
+    this.clockMode = mode;
+    if (this.clockOpen && this.track) this.refillCurrent();
+  }
+
+  private stopClockMotion(): void {
+    if (this.clockFrame !== null) {
+      cancelAnimationFrame(this.clockFrame);
+      this.clockFrame = null;
+    }
+    if (this.clockTimer !== null) {
+      window.clearInterval(this.clockTimer);
+      this.clockTimer = null;
+    }
+  }
+
+  /** Sweep the now-needle while the dial is open. One loop for every visible day. */
+  private syncClockMotion(): void {
+    this.stopClockMotion();
+    if (!this.clockOpen || !this.root) return;
+    const root = this.root;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduced) {
+      paintDayClocks(root);
+      this.clockTimer = window.setInterval(() => paintDayClocks(root), 1000);
+      return;
+    }
+    const loop = (): void => {
+      paintDayClocks(root);
+      this.clockFrame = requestAnimationFrame(loop);
+    };
+    this.clockFrame = requestAnimationFrame(loop);
   }
 
   private buildHeader(header: HTMLElement): void {

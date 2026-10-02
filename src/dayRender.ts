@@ -9,6 +9,7 @@ import type { ViewHost } from "./viewHost";
 import { buildCollapsedGroup, fillGroup } from "./taskRow";
 import { groupDoneByCompletionRuns, sortedGroups } from "./taskSort";
 import { isMobileUi } from "./platform";
+import { renderDayClock } from "./dayClock";
 
 /** Week slide: 7 day columns with tasks */
 export function fillWeekSlide(view: ViewHost, slide: HTMLElement, monday: Date): void {
@@ -111,9 +112,23 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
     cls: "tv-day-month",
     text: `${MONTHS_EN[day.getMonth()]} ${day.getFullYear()}`,
   });
+  const tools = head.createDiv({ cls: "tv-day-tools" });
+  const clockBtn = tools.createEl("button", {
+    cls: "tv-day-clock-btn" + (view.clockOpen ? " is-on" : ""),
+    attr: {
+      "aria-label": view.clockOpen ? "Hide the day clock" : "Show the day clock",
+      "aria-pressed": view.clockOpen ? "true" : "false",
+    },
+  });
+  clockBtn.setText("Clock");
+  clockBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    view.toggleDayClock();
+  });
   // Priority/reorder button in the day header (desktop only; shown on hover)
   if (!isMobileUi()) {
-    const prioBtn = head.createEl("button", {
+    const prioBtn = tools.createEl("button", {
       cls: "tv-day-priority",
       attr: { "aria-label": "Reorder group priorities" },
     });
@@ -125,6 +140,12 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
       e.preventDefault();
       view.openDayPriorityMenu(prioBtn, formatDate(day));
     });
+  }
+  if (view.clockOpen) {
+    const holder = card.createDiv({ cls: "tv-day-clock" });
+    renderDayClock(holder, day, view.tasksForDay(formatDate(day)), view.clockMode, (mode) =>
+      view.setClockMode(mode)
+    );
   }
   fillDayBody(view, card, day);
 }

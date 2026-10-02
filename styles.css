@@ -963,6 +963,285 @@
   color: var(--text-normal);
 }
 
+/* === clock.css: 24-hour day dial toggled from the day header === */
+
+.tv-day-slide .tv-day-head {
+  padding-right: 78px;
+}
+
+.tv-day-slide .tv-day-tools {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  z-index: 1;
+}
+
+.tv-day-slide .tv-day-tools .tv-day-priority {
+  position: static;
+  top: auto;
+  right: auto;
+  transform: none;
+}
+
+.tv-day-clock-btn {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.6em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  outline: none !important;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 6px;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.tv-day-clock-btn:hover,
+.tv-day-clock-btn.is-on {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+.tv-day-clock {
+  flex: none;
+  padding: 10px 16px 2px;
+  user-select: none;
+}
+
+.tv-clock-face {
+  display: block;
+  width: min(100%, 460px);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+}
+
+.tv-clock-disc {
+  stroke: var(--background-modifier-border);
+  stroke-width: 1;
+}
+
+.tv-clock-guide {
+  fill: none;
+  stroke: var(--text-faint);
+  stroke-opacity: 0.28;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.tv-clock-tick {
+  stroke: var(--text-faint);
+  stroke-opacity: 0.55;
+  stroke-width: 1;
+  pointer-events: none;
+}
+
+.tv-clock-tick.is-quarter {
+  stroke-width: 1.25;
+  stroke-opacity: 0.75;
+}
+
+.tv-clock-tick.is-hour {
+  stroke: var(--text-muted);
+  stroke-opacity: 0.9;
+  stroke-width: 1.6;
+}
+
+.tv-clock-label {
+  fill: var(--text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-interface);
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none;
+}
+
+.tv-clock-block {
+  cursor: pointer;
+}
+
+.tv-clock-arc {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 16;
+  stroke-opacity: 0.72;
+  pointer-events: stroke;
+}
+
+.tv-clock-block.is-point .tv-clock-arc {
+  stroke-width: 9;
+  stroke-opacity: 0.9;
+}
+
+.tv-clock-edge {
+  fill: none;
+  stroke-linecap: round;
+  stroke-width: 2.2;
+  stroke-opacity: 0.95;
+  pointer-events: none;
+}
+
+.tv-clock-block.is-past .tv-clock-arc {
+  stroke-opacity: 0.28;
+}
+
+.tv-clock-block.is-past .tv-clock-edge {
+  stroke-opacity: 0.35;
+}
+
+.tv-clock-block.is-done .tv-clock-arc,
+.tv-clock-block.is-done .tv-clock-edge {
+  stroke-opacity: 0.22;
+}
+
+.tv-clock-block.is-hot .tv-clock-arc,
+.tv-clock-block.is-hot .tv-clock-edge {
+  stroke-opacity: 1;
+}
+
+.tv-clock-glow {
+  pointer-events: none;
+}
+
+.tv-clock-glow-step {
+  fill: #e8893a;
+  pointer-events: none;
+}
+
+.tv-clock-modes {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: fit-content;
+  margin: 2px auto 8px;
+  padding: 3px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 12px;
+  background: var(--background-primary);
+}
+
+.tv-clock-mode {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  outline: none !important;
+  color: var(--text-muted);
+  font-size: 0.72em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.tv-clock-mode:hover,
+.tv-clock-mode.is-on {
+  background: var(--background-modifier-hover) !important;
+  color: var(--text-normal);
+}
+
+.tv-clock-needle,
+.tv-clock-hour,
+.tv-clock-minute,
+.tv-clock-second,
+.tv-clock-boss-wrap {
+  pointer-events: none;
+}
+
+.tv-clock-needle,
+.tv-clock-hour,
+.tv-clock-minute {
+  filter: drop-shadow(0 0 5px rgba(232, 137, 58, 0.7));
+}
+
+.tv-clock-needle line {
+  stroke: #e8893a;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+}
+
+.tv-clock-needle circle {
+  fill: #e8893a;
+}
+
+.tv-clock-hour-shape {
+  fill: #e8893a;
+}
+
+.tv-clock-minute-shape {
+  fill: #f0b56b;
+}
+
+.tv-clock-second line {
+  stroke: #e25b2a;
+  stroke-width: 1.15;
+  stroke-linecap: round;
+}
+
+.tv-clock-second-bob {
+  fill: #e25b2a;
+}
+
+.tv-clock-second-eye {
+  fill: none;
+  stroke: #e25b2a;
+  stroke-width: 1.2;
+}
+
+.tv-clock-boss {
+  fill: #e8893a;
+}
+
+.tv-clock-boss-pin {
+  fill: var(--background-primary);
+}
+
+.tv-clock-needle.is-hidden,
+.tv-clock-hour.is-hidden,
+.tv-clock-minute.is-hidden,
+.tv-clock-second.is-hidden,
+.tv-clock-boss-wrap.is-hidden,
+.tv-clock-glow.is-hidden {
+  visibility: hidden;
+}
+
+.tv-clock-time {
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-family: var(--font-interface);
+  font-size: 22px;
+  font-weight: 600;
+  fill: var(--text-normal);
+  pointer-events: none;
+}
+
+.tv-clock-tip {
+  position: fixed;
+  z-index: 40;
+  max-width: 240px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-size: 0.82em;
+  line-height: 1.35;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+}
+
 /* === priority.css: Priority popup and shared priority rows === */
 
 /* Priority popup: the ordered list of prioritized notes (drag to reorder).
