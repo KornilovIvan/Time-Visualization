@@ -59,6 +59,86 @@
   color: var(--text-normal);
 }
 
+/* The clock floats, so each row sits in the left column only while it would
+   overlap the dial. The next row clears that and runs full width, with the
+   float margins as the gap. */
+.tv-day-clock-layout {
+  display: flow-root;
+}
+
+.tv-day-timed-list {
+  display: block;
+  min-width: 0;
+  padding: 6px;
+}
+
+.tv-day-timed-list.tv-hidden {
+  display: none;
+}
+
+.tv-day-clock-layout .tv-day-list,
+.tv-day-clock-layout .tv-day-group-tasks,
+.tv-day-clock-layout .tv-day-done-list {
+  display: block;
+}
+
+.tv-day-clock-layout .tv-day-active-title,
+.tv-day-clock-layout .tv-day-done-title {
+  display: flow-root;
+}
+
+.tv-day-clock-layout .tv-day-active-title {
+  margin-bottom: 4px;
+}
+
+.tv-day-clock-layout .tv-day-group-tasks > .tv-task + .tv-task {
+  margin-top: 2px;
+}
+
+.tv-day-clock-layout > .tv-day-list,
+.tv-day-clock-layout > .tv-day-done-section {
+  clear: right;
+}
+
+.tv-day-clock-layout:has(> .tv-day-timed-list:not(.tv-hidden)) > .tv-day-list:not(.tv-hidden) {
+  margin-top: 6px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.tv-day-clock-layout:not(:has(> .tv-day-timed-list:not(.tv-hidden))) > .tv-day-list:not(.tv-hidden) {
+  clear: none;
+  margin-top: 0;
+  border-top: none;
+}
+
+.tv-day-clock-layout:has(> .tv-day-timed-list:not(.tv-hidden)):not(:has(> .tv-day-list:not(.tv-hidden))) > .tv-day-done-section:not(.is-empty),
+.tv-day-clock-layout:not(:has(> .tv-day-timed-list:not(.tv-hidden))):has(> .tv-day-list:not(.tv-hidden)) > .tv-day-done-section:not(.is-empty) {
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.tv-day-clock-layout:not(:has(> .tv-day-timed-list:not(.tv-hidden))):not(:has(> .tv-day-list:not(.tv-hidden))) > .tv-day-done-section:not(.is-empty) {
+  clear: none;
+  margin-top: 0;
+  border-top: none;
+}
+
+.tv-day-clock-layout:not(:has(> .tv-day-timed-list:not(.tv-hidden))) > .tv-day-done-section > .tv-day-done-bar,
+.tv-day-clock-layout:not(:has(> .tv-day-list:not(.tv-hidden))) > .tv-day-done-section > .tv-day-done-bar {
+  display: none;
+}
+
+.tv-day-clock-layout > .tv-day-clock {
+  float: right;
+  width: min(56%, 460px);
+  margin: 0 0 12px 12px;
+  padding: 6px 8px 0 0;
+}
+
+.tv-day-clock-layout .tv-clock-face {
+  width: 100%;
+  margin: 0;
+}
+
 .tv-day-clock {
   flex: none;
   padding: 10px 16px 12px;
@@ -135,7 +215,8 @@
   stroke-opacity: 0.28;
 }
 
-.tv-clock-block.is-done .tv-clock-arc {
+.tv-clock-block.is-done .tv-clock-arc,
+.tv-clock-block.is-done.is-past .tv-clock-arc {
   stroke-opacity: 0.22;
 }
 
@@ -168,8 +249,7 @@
 
 .tv-clock-hour-shape,
 .tv-clock-minute-shape,
-.tv-clock-boss,
-.tv-clock-second-bob {
+.tv-clock-boss {
   fill: var(--text-normal);
 }
 
@@ -177,12 +257,6 @@
   stroke: var(--text-normal);
   stroke-width: 1.15;
   stroke-linecap: round;
-}
-
-.tv-clock-second-eye {
-  fill: none;
-  stroke: var(--text-normal);
-  stroke-width: 1.2;
 }
 
 .tv-clock-boss-pin {

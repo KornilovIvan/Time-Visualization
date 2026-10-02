@@ -24,7 +24,7 @@ import {
 } from "./menus";
 import { toggleTask } from "./taskWriter";
 import { isMobileUi } from "./platform";
-import { paintDayClocks } from "./dayClock";
+import { paintDayClocks, repaintClockTask } from "./dayClock";
 
 export { VIEW_TYPE, type Level } from "./viewHost";
 
@@ -365,6 +365,7 @@ export class TimeVisualizationView extends ItemView {
     this.suppressRerender(3000);
     void toggleTask(this.plugin, t).then((r) => {
       if (!r.ok) applyTaskToggled(this, taskEl, box, t);
+      else if (t.time) repaintClockTask(this.contentEl, t);
     }).catch(() => {
       applyTaskToggled(this, taskEl, box, t);
     });

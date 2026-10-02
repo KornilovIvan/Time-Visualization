@@ -188,7 +188,7 @@ function minuteHand(): SVGGElement {
   ]);
 }
 
-/** Thin second hand: a counterweight, a ring, and a tip that sweeps the ticks. */
+/** Thin second hand. A short tail sits past the pivot. */
 function secondHand(): SVGGElement {
   const { cx, cy } = CLOCK;
   const hand = svgEl("g");
@@ -198,19 +198,7 @@ function secondHand(): SVGGElement {
   line.setAttribute("y1", String(cy + 34));
   line.setAttribute("x2", String(cx));
   line.setAttribute("y2", String(cy - 160));
-  const bob = svgEl("circle");
-  bob.setAttribute("class", "tv-clock-second-bob");
-  bob.setAttribute("cx", String(cx));
-  bob.setAttribute("cy", String(cy + 26));
-  bob.setAttribute("r", "3.6");
-  const eye = svgEl("circle");
-  eye.setAttribute("class", "tv-clock-second-eye");
-  eye.setAttribute("cx", String(cx));
-  eye.setAttribute("cy", String(cy - 118));
-  eye.setAttribute("r", "4.2");
   hand.appendChild(line);
-  hand.appendChild(bob);
-  hand.appendChild(eye);
   return hand;
 }
 
@@ -248,6 +236,8 @@ function blockEl(event: ClockEvent, cycle: number): SVGGElement {
   group.setAttribute("class", "tv-clock-block" + (event.ranged ? "" : " is-point") + (event.done ? " is-done" : ""));
   group.dataset.start = String(event.start);
   group.dataset.end = String(event.end);
+  group.dataset.file = event.filePath;
+  if (event.line !== undefined) group.dataset.line = String(event.line);
   group.dataset.label = shortLabel(event.label);
   group.dataset.when = event.timeLabel.replace(/\s*[-–—]\s*/g, "–");
 
@@ -299,7 +289,40 @@ function clockNodes(root: ParentNode): HTMLElement[] {
   return nodes;
 }
 
-/** Move the now-needle and dim arcs that have already ended. Safe to call often. */
+/** Redraw one task's arc after its stored range changes. */
+export function repaintClockTask(root: ParentNode, task: ClockTask): void {
+  if (task.line === undefined || !task.time) return;
+  const event = eventsForClock([task])[0];
+  if (!event) return;
+  const line = String(task.line);
+  root.querySelectorAll<SVGGElement>(".tv-clock-block").forEach((block) => {
+    if (block.dataset.file !== task.filePath || block.dataset.line !== line) return;
+    block.dataset.start = String(event.start);
+    block.dataset.end = String(event.end);
+    block.dataset.when = event.timeLabel.replace(/\s*[-–—]\s*/g, "–");
+    const arcs = Array.from(block.querySelectorAll<SVGPathElement>(".tv-clock-arc"));
+    const paint = (arc: SVGPathElement, draw: (typeof event.draws)[number]): void => {
+      const radius = draw.lane === 1 ? CLOCK.laneInner : CLOCK.laneOuter;
+      arc.setAttribute("d", arcPath(CLOCK.cx, CLOCK.cy, radius, draw.start, draw.end, FACE_CYCLE));
+      arc.setAttribute("stroke", event.color);
+    };
+    if (arcs.length === event.draws.length) {
+      event.draws.forEach((draw, i) => paint(arcs[i], draw));
+      return;
+    }
+    arcs.forEach((arc) => arc.remove());
+    const title = block.querySelector("title");
+    if (title) title.textContent = `${block.dataset.when} ${event.label}`.trim();
+    for (const draw of event.draws) {
+      const arc = svgEl("path");
+      arc.setAttribute("class", "tv-clock-arc");
+      paint(arc, draw);
+      if (title) block.insertBefore(arc, title);
+      else block.appendChild(arc);
+    }
+  });
+}
+
 export function paintDayClocks(root: ParentNode, now = new Date()): void {
   const today = formatDate(now);
   const nowMin = minutesOf(now);

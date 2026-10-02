@@ -4,7 +4,7 @@ import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
 import type { ViewHost } from "./viewHost";
 import { startEditTask } from "./taskRow";
-import { flipMove, syncActiveSection } from "./toggleAnimation";
+import { flipMove, syncActiveSection, syncTimedSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
 import { moveTask } from "./taskWriter";
 import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
@@ -138,6 +138,7 @@ export function moveTaskToNextDay(view: ViewHost, row: HTMLElement, t: ParsedTas
         row.remove();
         if (group && isLast) group.remove();
         syncActiveSection(slide);
+        syncTimedSection(slide);
       });
     } else {
       row.remove();

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "obsidian";
 import type { ParsedTask } from "../parser";
-import { moveTask, toggleTask, updateTaskText } from "../taskWriter";
+import { clipRangeToNow, moveTask, toggleTask, updateTaskText } from "../taskWriter";
 import type TimeVisualizationPlugin from "../main";
 
 type FakePlugin = TimeVisualizationPlugin & {
@@ -10,7 +10,7 @@ type FakePlugin = TimeVisualizationPlugin & {
 
 function makePlugin(
   content: string,
-  settings: { recordDoneTime?: boolean } = {}
+  settings: { recordDoneTime?: boolean; trimEndOnComplete?: boolean } = {}
 ): FakePlugin {
   const file = new TFile();
   file.path = "note.md";
@@ -19,6 +19,7 @@ function makePlugin(
   const plugin = {
     settings: {
       recordDoneTime: settings.recordDoneTime ?? false,
+      trimEndOnComplete: settings.trimEndOnComplete ?? false,
       sources: [],
       includeTags: [],
       dateFormat: "legacy" as const,
@@ -142,6 +143,70 @@ describe("toggleTask", () => {
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe("- [ ] Buy milk |[date:: 2026-08-05]");
+  });
+
+  it("leaves a time range unchanged when early-complete trimming is off", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 2, 19, 30, 0));
+    const plugin = makePlugin("- [ ] Focus |[date:: 2026-10-02] |[time:: 18:00-22:00]");
+    const t = task({
+      line: 0,
+      format: "legacy",
+      date: "2026-10-02",
+      time: "18:00-22:00",
+      text: "Focus",
+    });
+
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      "- [x] Focus |[date:: 2026-10-02] |[time:: 18:00-22:00]"
+    );
+  });
+
+  it("cuts the range end to the completion minute while the task is still scheduled", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 2, 19, 30, 0));
+    const plugin = makePlugin("- [ ] Focus |[date:: 2026-10-02] |[time:: 18:00-22:00]", {
+      trimEndOnComplete: true,
+    });
+    const t = task({
+      line: 0,
+      format: "legacy",
+      date: "2026-10-02",
+      time: "18:00-22:00",
+      text: "Focus",
+    });
+
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      "- [x] Focus |[date:: 2026-10-02] |[time:: 18:00-19:30]"
+    );
+    expect(t.time).toBe("18:00-19:30");
+  });
+
+  it("does not shorten a range that has already ended", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 9, 2, 22, 15, 0));
+    const plugin = makePlugin("- [ ] Focus |[date:: 2026-10-02] |[time:: 18:00-22:00]", {
+      trimEndOnComplete: true,
+    });
+    const t = task({
+      line: 0,
+      format: "legacy",
+      date: "2026-10-02",
+      time: "18:00-22:00",
+      text: "Focus",
+    });
+
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      "- [x] Focus |[date:: 2026-10-02] |[time:: 18:00-22:00]"
+    );
+  });
+
+  it("keeps a dash style when cutting the end", () => {
+    expect(clipRangeToNow("18:00–22:00", 19 * 60 + 30)).toBe("18:00–19:30");
+    expect(clipRangeToNow("18:00", 19 * 60)).toBeNull();
   });
 
   it("appends [done::] for tasks-format completion", async () => {

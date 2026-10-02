@@ -48,6 +48,7 @@ export interface ClockTask {
   text: string;
   filePath: string;
   checked: boolean;
+  line?: number;
 }
 
 /** One painted arc. `start`/`end` are minutes on the 12-hour face (0–720). */
@@ -69,6 +70,8 @@ export interface ClockEvent {
   timeLabel: string;
   color: string;
   done: boolean;
+  filePath: string;
+  line?: number;
 }
 
 const RANGE_RE = /^(\d{1,2}):(\d{2})(?:\s*[-–—]\s*(\d{1,2}):(\d{2}))?$/;
@@ -163,6 +166,8 @@ function eventFrom(
     timeLabel: task.time ?? "",
     color: colorForPath(task.filePath),
     done: task.checked,
+    filePath: task.filePath,
+    line: task.line,
   };
 }
 

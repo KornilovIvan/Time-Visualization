@@ -28,6 +28,7 @@ describe("normalizeLoadedSettings", () => {
     expect(settings.priorities).toEqual(["A.md"]);
     expect(settings.dayOrder).toEqual({ "2026-01-01": ["A.md"] });
     expect(settings.openOnStartup).toBe(false);
+    expect(settings.trimEndOnComplete).toBe(false);
     expect(settings.customDateRegex).toBe("");
   });
 

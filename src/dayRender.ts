@@ -1,5 +1,5 @@
 import { setIcon } from "obsidian";
-import { formatDate } from "./parser";
+import { formatDate, type ParsedTask } from "./parser";
 import {
   MONTHS_EN,
   WEEKDAYS_FULL_EN,
@@ -143,8 +143,10 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
     view.toggleDayClock();
   });
   if (view.clockOpen) {
-    const holder = card.createDiv({ cls: "tv-day-clock" });
+    const layout = card.createDiv({ cls: "tv-day-clock-layout" });
+    const holder = layout.createDiv({ cls: "tv-day-clock" });
     renderDayClock(holder, day, view.tasksForDay(formatDate(day)));
+    layout.createDiv({ cls: "tv-day-timed-list" });
   }
   fillDayBody(view, card, day);
 }
@@ -171,24 +173,21 @@ export function fillDayBody(
   const tasks = view.tasksForDay(key);
   const active = tasks.filter((t) => !t.checked);
   const done = tasks.filter((t) => t.checked);
+  const timedList = card.querySelector(".tv-day-timed-list") as HTMLElement | null;
+  const open = timedList ? active.filter((t) => !t.time) : active;
+  const body = (card.querySelector(".tv-day-clock-layout") as HTMLElement | null) ?? card;
 
-  const list = card.createDiv({ cls: "tv-day-list" });
-  if (active.length === 0) {
-    list.classList.add("tv-hidden");
-  } else {
-    list.createDiv({ cls: "tv-day-active-title", text: "Open tasks" });
-    for (const g of sortedGroups(view.plugin.settings, active, key)) {
-      // null timed = merged adjacent buckets — one header, no data-timed marker
-      const bucket = g.timed === null ? undefined : g.timed;
-      if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, "active", bucket);
-      else fillGroup(view, list, g.tasks, g.path, key, bucket);
-    }
+  if (timedList) {
+    fillActiveList(view, timedList, active.filter((t) => !!t.time), key, "Timed tasks", collapsible);
   }
 
-  const doneSection = card.createDiv({
+  const list = body.createDiv({ cls: "tv-day-list" });
+  fillActiveList(view, list, open, key, "Open tasks", collapsible);
+
+  const doneSection = body.createDiv({
     cls: "tv-day-done-section" + (done.length === 0 ? " is-empty" : ""),
   });
-  if (active.length > 0) doneSection.createDiv({ cls: "tv-day-done-bar" });
+  if (open.length > 0) doneSection.createDiv({ cls: "tv-day-done-bar" });
   doneSection.createDiv({ cls: "tv-day-done-title", text: "Done" });
   const doneList = doneSection.createDiv({ cls: "tv-day-done-list" });
   if (done.length > 0) {
@@ -196,5 +195,27 @@ export function fillDayBody(
       if (collapsible) buildCollapsedGroup(view, doneList, g.tasks, g.path, key, "done");
       else fillGroup(view, doneList, g.tasks, g.path, key);
     }
+  }
+}
+
+/** Open-task groups: same note buckets, strikethrough, and rows as Open tasks. */
+function fillActiveList(
+  view: ViewHost,
+  list: HTMLElement,
+  tasks: ParsedTask[],
+  key: string,
+  title: string,
+  collapsible: boolean
+): void {
+  if (tasks.length === 0) {
+    list.classList.add("tv-hidden");
+    return;
+  }
+  list.classList.remove("tv-hidden");
+  list.createDiv({ cls: "tv-day-active-title", text: title });
+  for (const g of sortedGroups(view.plugin.settings, tasks, key)) {
+    const bucket = g.timed === null ? undefined : g.timed;
+    if (collapsible) buildCollapsedGroup(view, list, g.tasks, g.path, key, "active", bucket);
+    else fillGroup(view, list, g.tasks, g.path, key, bucket);
   }
 }

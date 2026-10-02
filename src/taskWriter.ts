@@ -16,6 +16,58 @@ export type TaskWriteResult =
 
 const OK: TaskWriteResult = { ok: true };
 
+const TIME_FIELD_RE = /\[\s*time\s*::\s*([^\]]*)\]/;
+const EMOJI_RANGE_RE = /⏰\s*(\d{1,2}:\d{2}\s*[-–—]\s*\d{1,2}:\d{2})/;
+
+function clockMinutes(hhmm: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(hhmm);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+function formatHM(total: number): string {
+  const h = Math.floor(total / 60) % 24;
+  const min = ((total % 60) + 60) % 60;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
+}
+
+/**
+ * If `value` is a range and `nowMin` is still inside it, return the same range
+ * with the end cut to `nowMin`. A point time, or a range that has already
+ * ended, is left unchanged (null).
+ */
+export function clipRangeToNow(value: string, nowMin: number): string | null {
+  const m = /^(\d{1,2}:\d{2})(\s*[-–—]\s*)(\d{1,2}:\d{2})$/.exec(value.trim());
+  if (!m) return null;
+  const start = clockMinutes(m[1]);
+  const end = clockMinutes(m[3]);
+  if (start === null || end === null || start === end) return null;
+  const wraps = end < start;
+  const endAbs = wraps ? end + 1440 : end;
+  const nowAbs = wraps && nowMin < start ? nowMin + 1440 : nowMin;
+  if (nowAbs <= start || nowAbs >= endAbs) return null;
+  return `${m[1]}${m[2]}${formatHM(nowMin)}`;
+}
+
+/** Rewrite a scheduled range on the line when it is completed early. */
+function clipLineTime(line: string, now: Date): string {
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const field = TIME_FIELD_RE.exec(line);
+  if (field) {
+    const next = clipRangeToNow(field[1], nowMin);
+    if (!next) return line;
+    return line.replace(TIME_FIELD_RE, `[time:: ${next}]`);
+  }
+  const emoji = EMOJI_RANGE_RE.exec(line);
+  if (!emoji) return line;
+  const next = clipRangeToNow(emoji[1], nowMin);
+  if (!next) return line;
+  return line.replace(emoji[1], next);
+}
+
 type ResolvedLine = {
   file: TFile;
   lines: string[];
@@ -141,6 +193,19 @@ export async function toggleTask(
             .replace(/(?:\s*\|)+\s*$/g, "")
             .trimEnd() + ` |[done:: ${now}]`;
       }
+    }
+  }
+
+  // Independent of the done marker: only when completing, and only while the
+  // scheduled range is still open. Unchecking leaves the written time as it is.
+  if (!checked && plugin.settings.trimEndOnComplete) {
+    const clipped = clipLineTime(lines[lineIndex], new Date());
+    if (clipped !== lines[lineIndex]) {
+      lines[lineIndex] = clipped;
+      const field = TIME_FIELD_RE.exec(clipped);
+      const emoji = EMOJI_RANGE_RE.exec(clipped);
+      const nextTime = field?.[1]?.trim() ?? emoji?.[1];
+      if (nextTime) task.time = nextTime;
     }
   }
 

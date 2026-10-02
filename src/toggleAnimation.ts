@@ -15,6 +15,16 @@ export function fadeIn(el: HTMLElement, duration: number): void {
   );
 }
 
+/** A finished timed task stays pale on the dial even while its range is still current. */
+function syncClockDone(slide: HTMLElement, t: ParsedTask): void {
+  const line = String(t.line);
+  slide.querySelectorAll<SVGGElement>(".tv-clock-block").forEach((block) => {
+    if (block.dataset.file === t.filePath && block.dataset.line === line) {
+      block.classList.toggle("is-done", t.checked);
+    }
+  });
+}
+
 /** Keep / clear the completion-time label on a task row after toggle. */
 function syncDoneAtLabel(row: HTMLElement, t: ParsedTask): void {
   const text = row.querySelector(".tv-task-text") as HTMLElement | null;
@@ -38,6 +48,33 @@ export function ensureDoneVisible(slide: HTMLElement): void {
   if (wasHidden) {
     fadeIn(title, 300);
   }
+}
+
+/** Hide the clock-side timed list once its last open task has left. */
+export function syncTimedSection(slide: HTMLElement): void {
+  const list = slide.querySelector(".tv-day-timed-list") as HTMLElement | null;
+  if (!list) return;
+  const hasGroups = list.querySelector(".tv-day-group") !== null;
+  const title = list.querySelector(".tv-day-active-title") as HTMLElement | null;
+  if (hasGroups) {
+    list.classList.remove("tv-hidden");
+    if (!title) {
+      const t = list.createDiv({ cls: "tv-day-active-title", text: "Timed tasks" });
+      list.insertBefore(t, list.firstChild);
+    }
+  } else {
+    list.classList.add("tv-hidden");
+    if (title) title.remove();
+  }
+}
+
+/** While the clock is open, a timed task returns to the side list, not Open tasks. */
+function listForReturn(slide: HTMLElement, timed: boolean): HTMLElement | null {
+  if (timed) {
+    const side = slide.querySelector(".tv-day-timed-list") as HTMLElement | null;
+    if (side) return side;
+  }
+  return slide.querySelector(".tv-day-list") as HTMLElement | null;
 }
 
 export function syncActiveSection(slide: HTMLElement): void {
@@ -136,6 +173,7 @@ export function applyTaskToggled(
   }
   syncDoneAtLabel(row, t);
   const slide = row.closest(".tv-day-slide, .tv-day-card") as HTMLElement | null;
+  if (slide && t.time) syncClockDone(slide, t);
 
   const mutate = (): void => {
     const esc = t.filePath.replace(/"/g, '\\"');
@@ -184,11 +222,12 @@ export function applyTaskToggled(
         row.parentElement?.appendChild(row);
       }
       syncActiveSection(slide);
+      syncTimedSection(slide);
     } else if (slide && !t.checked) {
       // Return to active: into the matching timed/untimed subgroup for this note
       const doneGroup = row.closest(".tv-day-group") as HTMLElement | null;
       const doneGroupTop = doneGroup ? doneGroup.getBoundingClientRect().top : 0;
-      const activeList = slide.querySelector(".tv-day-list") as HTMLElement | null;
+      const activeList = listForReturn(slide, timed);
       if (activeList) {
         // Prefer the matching timed/untimed bucket. Timed tasks must not fall
         // into a merged (no data-timed) group — that bucket often sits among
@@ -299,6 +338,7 @@ export function applyTaskToggled(
         row.parentElement?.appendChild(row);
       }
       syncActiveSection(slide);
+      syncTimedSection(slide);
     } else {
       row.parentElement?.appendChild(row);
     }

@@ -19,6 +19,8 @@ export interface TimeVisualizationSettings {
   customDateRegex: string;
   /** Write a [done:: ...] marker on completion so the done order survives reloads */
   recordDoneTime: boolean;
+  /** When completing a task before its scheduled end, cut the range end to that minute */
+  trimEndOnComplete: boolean;
   /** Open the view automatically every time Obsidian starts */
   openOnStartup: boolean;
   /** Ordered list of prioritized notes or folders (first = highest priority);
@@ -38,6 +40,7 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   // Off by default: the plugin must not write into task lines until the user
   // explicitly enables it in Settings
   recordDoneTime: false,
+  trimEndOnComplete: false,
   // Off by default: auto-opening the view on every start can be intrusive
   openOnStartup: false,
   priorities: [],
@@ -167,6 +170,16 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
       .addToggle((tg) =>
         tg.setValue(this.plugin.settings.recordDoneTime).onChange(async (v) => {
           this.plugin.settings.recordDoneTime = v;
+          await this.plugin.saveSettings();
+        })
+      );
+
+    new Setting(containerEl)
+      .setName("Cut the time range when completed early")
+      .setDesc("If you check off a task while its scheduled time is still running, the end of the range is set to that minute. For example [time:: 18:00-22:00] becomes [time:: 18:00-19:30]. Off by default: the time field stays as written.")
+      .addToggle((tg) =>
+        tg.setValue(this.plugin.settings.trimEndOnComplete).onChange(async (v) => {
+          this.plugin.settings.trimEndOnComplete = v;
           await this.plugin.saveSettings();
         })
       );
