@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { TFile } from "obsidian";
-import { TaskIndex } from "../taskIndex";
+import { filterTasksByNotes, TaskIndex } from "../taskIndex";
+import type { ParsedTask } from "../parser";
 import type TimeVisualizationPlugin from "../main";
 import { DEFAULT_SETTINGS, type TimeVisualizationSettings } from "../settings";
 
@@ -170,5 +171,29 @@ describe("TaskIndex", () => {
     await index.refresh();
     expect(index.getFileTasks("a.md")).toHaveLength(2);
     expect(index.getTasks("2026-01-05")).toHaveLength(1);
+    expect(index.notePaths()).toEqual(["a.md"]);
+  });
+});
+
+describe("filterTasksByNotes", () => {
+  const task = (filePath: string): ParsedTask => ({
+    filePath,
+    line: 0,
+    raw: "",
+    checked: false,
+    text: filePath,
+    tags: [],
+    format: "legacy",
+  });
+  const tasks = [task("Adventure.md"), task("Other.md")];
+
+  it("returns every task when no notes are selected", () => {
+    expect(filterTasksByNotes(tasks, [])).toBe(tasks);
+  });
+
+  it("keeps only the selected notes", () => {
+    expect(filterTasksByNotes(tasks, ["Adventure.md"]).map((t) => t.filePath)).toEqual([
+      "Adventure.md",
+    ]);
   });
 });

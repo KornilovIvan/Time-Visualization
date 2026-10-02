@@ -226,3 +226,102 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   };
   document.addEventListener("wheel", onScroll, true);
 }
+
+export function closeNoteFilterMenu(view: ViewHost): void {
+  if (view.noteFilterMenu) {
+    view.noteFilterMenu.remove();
+    view.noteFilterMenu = null;
+  }
+  if (view.noteFilterAnchor) {
+    view.noteFilterAnchor.removeClass("is-open");
+  }
+  view.noteFilterAnchor = null;
+}
+
+/** Header filter: show tasks from the checked notes. Empty selection shows all. */
+export function showNoteFilterMenu(view: ViewHost, anchor: HTMLElement): void {
+  if (view.noteFilterMenu && view.noteFilterAnchor === anchor) {
+    closeNoteFilterMenu(view);
+    return;
+  }
+  closeNoteFilterMenu(view);
+  closeTaskMenu(view);
+  closePriorityMenu(view);
+  view.menuJustClosed = false;
+  view.noteFilterAnchor = anchor;
+  anchor.addClass("is-open");
+
+  const popup = createDiv();
+  popup.className = "tv-task-menu-popup tv-note-filter-popup";
+
+  const all = popup.createDiv({ cls: "tv-task-menu-item tv-note-filter-item" });
+  const allMark = all.createSpan({ cls: "tv-note-filter-mark" });
+  all.createSpan({ text: "All notes" });
+
+  const rows: Array<{ path: string; row: HTMLElement; mark: HTMLElement }> = [];
+  const sync = (): void => {
+    const selected = view.noteFilter;
+    const showAll = selected.length === 0;
+    all.classList.toggle("is-on", showAll);
+    allMark.setText(showAll ? "✓" : "");
+    for (const { path, row, mark } of rows) {
+      const on = selected.includes(path);
+      row.classList.toggle("is-on", on);
+      mark.setText(on ? "✓" : "");
+    }
+  };
+
+  all.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    view.clearNoteFilter();
+    sync();
+  });
+
+  for (const path of view.index.notePaths()) {
+    const row = popup.createDiv({ cls: "tv-task-menu-item tv-note-filter-item" });
+    const mark = row.createSpan({ cls: "tv-note-filter-mark" });
+    const label = path.includes("/") ? path.replace(/\.md$/i, "") : fileName(path);
+    row.createSpan({ cls: "tv-note-filter-name", text: label });
+    row.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      ev.preventDefault();
+      view.toggleNoteFilter(path);
+      sync();
+    });
+    rows.push({ path, row, mark });
+  }
+  sync();
+
+  document.body.appendChild(popup);
+  view.noteFilterMenu = popup;
+
+  const rect = anchor.getBoundingClientRect();
+  const popupW = popup.offsetWidth || 220;
+  popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
+  popup.style.top = `${rect.bottom + 4}px`;
+
+  const close = (ev: MouseEvent): void => {
+    if (popup.contains(ev.target as Node)) return;
+    if (anchor.contains(ev.target as Node)) return;
+    view.menuJustClosed = true;
+    closeNoteFilterMenu(view);
+    document.removeEventListener("mousedown", close, true);
+    document.removeEventListener("wheel", onWheel, true);
+  };
+  document.addEventListener("mousedown", close, true);
+  // Wheel inside the list scrolls the list. Closing here used to remove the
+  // popup mid-event, so the same wheel then scrolled the day underneath.
+  const onWheel = (ev: WheelEvent): void => {
+    if (popup.contains(ev.target as Node)) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      popup.scrollTop += ev.deltaY;
+      return;
+    }
+    closeNoteFilterMenu(view);
+    document.removeEventListener("mousedown", close, true);
+    document.removeEventListener("wheel", onWheel, true);
+  };
+  document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+}

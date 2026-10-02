@@ -28,7 +28,14 @@ export interface ViewHost {
   menuJustClosed: boolean;
   priorityMenu: HTMLElement | null;
   priorityMenuAnchor: HTMLElement | null;
+  /** Note paths to show. Empty = every note. */
+  noteFilter: string[];
+  noteFilterMenu: HTMLElement | null;
+  noteFilterAnchor: HTMLElement | null;
 
+  tasksForDay(date: string): ParsedTask[];
+  toggleNoteFilter(path: string): void;
+  clearNoteFilter(): void;
   setLevel(level: Level, resetToToday?: boolean): void;
   isSelectionClick(e: MouseEvent): boolean;
   suppressRerender(ms: number): void;

@@ -67,8 +67,8 @@ export function buildCollapsedGroup(
       const keySet = group.dataset.taskKeys
         ? new Set(group.dataset.taskKeys.split("\n").filter(Boolean))
         : null;
-      const fresh = view.index
-        .getTasks(dayKey)
+      const fresh = view
+        .tasksForDay(dayKey)
         .filter((t) => {
           if (t.filePath !== fPath) return false;
           if (sec === "done" ? !t.checked : t.checked) return false;

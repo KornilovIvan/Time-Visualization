@@ -27,6 +27,13 @@
   gap: 12px;
 }
 
+.tv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .tv-nav {
   display: flex;
   align-items: center;
@@ -122,6 +129,21 @@
   transform: scale(1.14);
   color: var(--text-normal);
   font-weight: 700;
+}
+
+.tv-note-filter {
+  max-width: 12em;
+}
+
+.tv-note-filter > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-btn.tv-note-filter.is-filtering {
+  font-weight: 700;
+  border-color: var(--text-normal) !important;
 }
 
 .tv-body {

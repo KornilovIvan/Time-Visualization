@@ -141,6 +141,13 @@
   gap: 12px;
 }
 
+.tv-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
 .tv-nav {
   display: flex;
   align-items: center;
@@ -236,6 +243,21 @@
   transform: scale(1.14);
   color: var(--text-normal);
   font-weight: 700;
+}
+
+.tv-note-filter {
+  max-width: 12em;
+}
+
+.tv-note-filter > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-btn.tv-note-filter.is-filtering {
+  font-weight: 700;
+  border-color: var(--text-normal) !important;
 }
 
 .tv-body {
@@ -1212,6 +1234,35 @@
 
 .tv-task-menu-item:hover {
   background: var(--background-modifier-hover);
+}
+
+.tv-note-filter-popup {
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tv-note-filter-item {
+  gap: 6px;
+}
+
+.tv-note-filter-mark {
+  flex: none;
+  width: 1em;
+  text-align: center;
+}
+
+.tv-note-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-note-filter-item.is-on {
+  font-weight: 600;
 }
 
 .tv-task-edit {

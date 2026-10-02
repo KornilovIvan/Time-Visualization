@@ -148,7 +148,7 @@ export function fillDayBody(
   collapsible = false
 ): void {
   const key = formatDate(day);
-  const tasks = view.index.getTasks(key);
+  const tasks = view.tasksForDay(key);
   const active = tasks.filter((t) => !t.checked);
   const done = tasks.filter((t) => t.checked);
 

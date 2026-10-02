@@ -2,6 +2,13 @@ import { TFile } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
 import { ParsedTask, parseTaskLine } from "./parser";
 
+/** Empty `notes` means every task. Otherwise keep only those notes. */
+export function filterTasksByNotes(tasks: ParsedTask[], notes: readonly string[]): ParsedTask[] {
+  if (notes.length === 0) return tasks;
+  const allow = new Set(notes);
+  return tasks.filter((t) => allow.has(t.filePath));
+}
+
 /** Task index by date. Caches parsed tasks per file; on a file change only its
     contribution and the date index are rebuilt. File writes live in taskWriter. */
 export class TaskIndex {
@@ -144,6 +151,18 @@ export class TaskIndex {
 
   getTasks(date: string): ParsedTask[] {
     return this.byDate.get(date) ?? [];
+  }
+
+  /** Notes that currently contribute at least one dated task. */
+  notePaths(): string[] {
+    const paths = new Set<string>();
+    for (const tasks of this.fileCache.values()) {
+      for (const t of tasks) {
+        if (!t.date || !this.matchesTags(t)) continue;
+        paths.add(t.filePath);
+      }
+    }
+    return Array.from(paths).sort((a, b) => a.localeCompare(b));
   }
 
   private matchesFile(path: string): boolean {

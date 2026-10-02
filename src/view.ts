@@ -4,9 +4,9 @@ import {
   setIcon,
 } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
-import { TaskIndex } from "./taskIndex";
+import { filterTasksByNotes, TaskIndex } from "./taskIndex";
 import { ParsedTask, formatDate, startOfDay } from "./parser";
-import { addDays, startOfWeek } from "./dates";
+import { addDays, fileName, startOfWeek } from "./dates";
 import { VIEW_TYPE, type Level } from "./viewHost";
 import {
   carouselStep,
@@ -14,7 +14,14 @@ import {
   renderCarousel,
 } from "./carousel";
 import { applyTaskToggled } from "./toggleAnimation";
-import { closePriorityMenu, closeTaskMenu, showDayPriorityMenu, showTaskMenu } from "./menus";
+import {
+  closeNoteFilterMenu,
+  closePriorityMenu,
+  closeTaskMenu,
+  showDayPriorityMenu,
+  showNoteFilterMenu,
+  showTaskMenu,
+} from "./menus";
 import { toggleTask } from "./taskWriter";
 import { isMobileUi } from "./platform";
 
@@ -54,6 +61,11 @@ export class TimeVisualizationView extends ItemView {
   priorityMenu: HTMLElement | null = null;
   /** Button that opened the priority menu (to toggle it closed on re-click) */
   priorityMenuAnchor: HTMLElement | null = null;
+  /** Note paths to show. Empty = every note. */
+  noteFilter: string[] = [];
+  noteFilterMenu: HTMLElement | null = null;
+  noteFilterAnchor: HTMLElement | null = null;
+  private noteFilterBtn: HTMLElement | null = null;
 
   constructor(leaf: WorkspaceLeaf, plugin: TimeVisualizationPlugin) {
     super(leaf);
@@ -239,6 +251,7 @@ export class TimeVisualizationView extends ItemView {
     if (this.level === level) return;
     closePriorityMenu(this);
     closeTaskMenu(this);
+    closeNoteFilterMenu(this);
     if (resetToToday) this.cursor = startOfDay(new Date());
     this.level = level;
     this.render();
@@ -247,6 +260,7 @@ export class TimeVisualizationView extends ItemView {
   navigate(dir: 1 | -1): void {
     closePriorityMenu(this);
     closeTaskMenu(this);
+    closeNoteFilterMenu(this);
     carouselStep(this, dir, getCarouselMeta(this, this.level));
   }
 
@@ -255,6 +269,7 @@ export class TimeVisualizationView extends ItemView {
     if (formatDate(this.cursor) === formatDate(now)) return;
     closePriorityMenu(this);
     closeTaskMenu(this);
+    closeNoteFilterMenu(this);
     this.cursor = now;
     this.render();
   }
@@ -413,7 +428,49 @@ export class TimeVisualizationView extends ItemView {
       b.addEventListener("click", () => this.setLevel(lv, true));
     }
 
-    this.addSettingsButton(controls);
+    const actions = header.createDiv({ cls: "tv-header-actions" });
+    this.addNoteFilterButton(actions);
+    this.addSettingsButton(actions);
+  }
+
+  private addNoteFilterButton(parent: HTMLElement): void {
+    const btn = parent.createEl("button", {
+      cls: "tv-btn tv-note-filter",
+      attr: { "aria-label": "Filter by note" },
+    });
+    btn.createSpan({ text: "Notes" });
+    btn.addEventListener("click", () => showNoteFilterMenu(this, btn));
+    this.noteFilterBtn = btn;
+    this.syncNoteFilterButton();
+  }
+
+  tasksForDay(date: string): ParsedTask[] {
+    return filterTasksByNotes(this.index.getTasks(date), this.noteFilter);
+  }
+
+  toggleNoteFilter(path: string): void {
+    const i = this.noteFilter.indexOf(path);
+    if (i >= 0) this.noteFilter.splice(i, 1);
+    else this.noteFilter.push(path);
+    this.syncNoteFilterButton();
+    this.refillCurrent();
+  }
+
+  clearNoteFilter(): void {
+    if (this.noteFilter.length === 0) return;
+    this.noteFilter = [];
+    this.syncNoteFilterButton();
+    this.refillCurrent();
+  }
+
+  private syncNoteFilterButton(): void {
+    const btn = this.noteFilterBtn;
+    if (!btn) return;
+    const n = this.noteFilter.length;
+    btn.classList.toggle("is-filtering", n > 0);
+    const label = btn.querySelector("span");
+    const text = n === 0 ? "Notes" : n === 1 ? fileName(this.noteFilter[0]) : `Notes (${n})`;
+    if (label) label.setText(text);
   }
 
   private addNavButton(parent: HTMLElement, dir: 1 | -1, extraCls = ""): void {

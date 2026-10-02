@@ -99,6 +99,35 @@
   background: var(--background-modifier-hover);
 }
 
+.tv-note-filter-popup {
+  min-width: 200px;
+  max-width: 280px;
+  max-height: 320px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.tv-note-filter-item {
+  gap: 6px;
+}
+
+.tv-note-filter-mark {
+  flex: none;
+  width: 1em;
+  text-align: center;
+}
+
+.tv-note-filter-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tv-note-filter-item.is-on {
+  font-weight: 600;
+}
+
 .tv-task-edit {
   flex: 1;
   min-width: 0;
