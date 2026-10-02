@@ -28,6 +28,9 @@ Everything is one continuous view: switch levels with a click, page through time
 - **Completion order** — when enabled, on completion the `[date:: …]` field becomes a `[done:: …]` marker, so completed tasks keep their order across reloads.
 - **Group priorities** — ordered list of notes or folders in Settings (folders cover notes inside them), or reorder a day's groups from the day header.
 - **Time over priority** — optional setting: timed task groups sort above untimed ones.
+- **Day clock** — a 12-hour dial on the day view. Morning tasks draw on the inner ring (00:00–12:00), afternoon tasks on the outer ring (12:00–24:00). A single time is a short mark; a range such as `09:00-10:30` is an arc. On today, hour, minute and second hands move like a real clock, and a red stripe marks the current time. Hover an arc to see the task.
+- **Timed tasks beside the clock** — while the clock is open, tasks with a time leave Open tasks and sit next to the dial. Checking them off uses the same strikethrough and move-to-Done animation. If Timed tasks is empty, Open tasks takes that place; if Open tasks is empty too, Done does. A row stays in the column beside the dial only while it would overlap the face. Once it clears the clock, with a small gap, it runs the full width. The divider between blocks never sits above the bottom of the dial.
+- **Notes filter** — the header **Notes** button limits day, week and month to selected notes. Notes that have no dated tasks are not listed.
 - **Filters** — limit parsing to specific folders/notes and tags.
 - **Open on startup** — optionally open the view automatically every time Obsidian starts.
 - **Keyboard friendly** — arrow keys navigate time.
@@ -51,6 +54,7 @@ Rules:
 
 - Task markers: `- [ ]` / `- [x]` (also with `*`, and inside blockquotes `> `).
 - A date is required for the task to appear on a day; a time is optional and used for sorting.
+- A time may be a point (`09:00`) or a range (`09:00-10:30`, also an en dash or em dash). A range that passes midnight stays on the start day. The day clock draws points as short marks and ranges as arcs.
 - Tags (`#math`, `#sql`, …) are shown as chips; in the week/month views they are hidden to save space.
 - Tasks are grouped by the note they live in; click a group name to open the note.
 
@@ -69,6 +73,8 @@ Open the view via the ribbon icon (calendar) or the command palette: **"Open Tim
 - **Toggle a task** — click its checkbox (animated move to/from the Done section).
 - **Edit / move a task** — hover a task in the day view (desktop), click the `⋯` menu: *Edit* (inline) or *Move to next day*. Not available on mobile.
 - **Priority for a day** — hover the day header (desktop), click **Priority**, reorder notes with ↑/↓. You can rearrange notes inside a priority folder or move a note above/below other groups for that day. Not available on mobile.
+- **Day clock** — hover the day header and click the clock icon (on mobile the button stays visible). The dial sits on the right; timed tasks sit on the left. Click the icon again to close it and return those tasks to Open tasks. Completed arcs stay pale even while their range is still current.
+- **Filter notes** — the **Notes** button in the header. Tick notes, or **All notes** to clear the filter. One selected note shows its name on the button; several show `Notes (n)`. Scroll the popup with the mouse wheel.
 - **Go to today** — the **Today** button.
 
 ## Settings
@@ -79,6 +85,7 @@ In the plugin settings tab:
 - **Only parse tags** — show only tasks carrying any of the selected tags. Empty = all tags.
 - **Date format** — inline fields (`[date:: …]`), Obsidian Tasks (`📅`), or a custom regex.
 - **Record completion time** — on completion the `[date:: …]` field is replaced with a `[done:: …]` marker, keeping the done order across reloads. If you uncheck a task outside this view, the `[done:: …]` marker stays in the line — it is restored to `[date:: …]` when you toggle the task in the view. Off by default.
+- **Cut the time range when completed early** — if you check a task while its scheduled range is still running, the end is rewritten to that minute. `[time:: 18:00-22:00]` checked at 19:30 becomes `[time:: 18:00-19:30]`. Point times and ranges that have already ended are left as written. Unchecking does not restore the old end. Off by default, and independent of “Record completion time”.
 - **Open view on startup** — open the view automatically every time Obsidian starts. Off by default.
 - **Priority** — ordered list of notes or folders; first = highest. A folder covers notes inside it; list a specific note above that folder to pin it higher than its siblings. A per-day order of individual notes can be set from the day header's Priority button.
 - **Time over priority** — when on, groups with timed tasks sort above untimed groups.
