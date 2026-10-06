@@ -250,7 +250,7 @@ describe("compareGroups", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("prefers dayOrder over earliest time", () => {
+  it("orders timed groups by start time ahead of dayOrder", () => {
     const settings: TaskSortSettings = {
       ...base,
       dayOrder: { [DAY]: ["B.md", "A.md"] },
@@ -262,7 +262,7 @@ describe("compareGroups", () => {
         settings,
         DAY
       )
-    ).toBeLessThan(0);
+    ).toBeGreaterThan(0);
   });
 });
 
@@ -322,7 +322,7 @@ describe("sortedGroups", () => {
     expect(groups.filter((g) => g.timed === false).map((g) => g.path)).toEqual(["A.md"]);
   });
 
-  it("applies dayOrder within the timed section", () => {
+  it("orders the timed section by start time, not dayOrder", () => {
     const groups = sortedGroups(
       {
         ...base,
@@ -337,9 +337,51 @@ describe("sortedGroups", () => {
       DAY
     );
     expect(pathsTimed(groups)).toEqual([
-      { path: "Z.md", timed: true },
       { path: "A.md", timed: true },
+      { path: "Z.md", timed: true },
       { path: "M.md", timed: false },
+    ]);
+  });
+
+  it("orders timed notes by start time even when an earlier note has higher priority", () => {
+    const groups = sortedGroups(
+      {
+        ...base,
+        priorities: ["Блокнот.md", "Воллейбол.md", "Методы оптимизации.md"],
+      },
+      [
+        task("Блокнот.md", { time: "18:00-19:00", text: "подстричься" }),
+        task("Воллейбол.md", { time: "13:30-15:45", text: "получать кайф от игры" }),
+        task("Методы оптимизации.md", { time: "17:10-17:30", text: "лаба сдать задание 2" }),
+      ],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual([
+      "Воллейбол.md",
+      "Методы оптимизации.md",
+      "Блокнот.md",
+    ]);
+  });
+
+  it("keeps that time order when an untimed note shares the day", () => {
+    const groups = sortedGroups(
+      {
+        ...base,
+        priorities: ["Блокнот.md", "Воллейбол.md", "Методы оптимизации.md", "Прочее.md"],
+      },
+      [
+        task("Блокнот.md", { time: "18:00-19:00" }),
+        task("Воллейбол.md", { time: "13:30-15:45" }),
+        task("Методы оптимизации.md", { time: "17:10-17:30" }),
+        task("Прочее.md"),
+      ],
+      DAY
+    );
+    expect(groups.map((g) => g.path)).toEqual([
+      "Воллейбол.md",
+      "Методы оптимизации.md",
+      "Блокнот.md",
+      "Прочее.md",
     ]);
   });
 
@@ -507,7 +549,7 @@ describe("sortedGroupPaths", () => {
       ],
       DAY
     );
-    // Timed section first (B then A by dayOrder), then A untimed is not duplicated
+    // Timed section first (B at 09:00, then A at 10:00), then A untimed is not duplicated
     expect(paths).toEqual(["B.md", "A.md"]);
   });
 });

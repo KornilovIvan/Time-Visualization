@@ -2,6 +2,7 @@ import type { ParsedTask } from "./parser";
 import type { ViewHost } from "./viewHost";
 import { createTaskGroup } from "./taskGroup";
 import {
+  compareTimeStrings,
   earliestTimeFromGroupEl,
   findGroupInsertBefore,
   findTaskInsertIndex,
@@ -246,7 +247,7 @@ export function applyTaskToggled(
         const groupKeyTime = (g: HTMLElement | null): string | null => {
           const fromDom = g ? earliestTimeFromGroupEl(g, view.taskRefs) : null;
           if (t.time && fromDom) {
-            return t.time.localeCompare(fromDom) < 0 ? t.time : fromDom;
+            return compareTimeStrings(t.time, fromDom) < 0 ? t.time : fromDom;
           }
           return t.time ?? fromDom;
         };

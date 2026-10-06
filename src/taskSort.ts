@@ -1,3 +1,4 @@
+import { parseClockSpan } from "./clock";
 import type { ParsedTask } from "./parser";
 import type { TimeVisualizationSettings } from "./settings";
 
@@ -170,26 +171,58 @@ export interface GroupSortKey {
   earliestTime?: string | null;
 }
 
+/** Minutes from midnight for a point or the start of a range, or null. */
+export function timeStartMinutes(time: string | null | undefined): number | null {
+  if (!time) return null;
+  const span = parseClockSpan(time);
+  return span ? span.start : null;
+}
+
+/** Order two time strings by when they start. Equal starts fall through to the text. */
+export function compareTimeStrings(
+  a: string | null | undefined,
+  b: string | null | undefined
+): number {
+  const am = timeStartMinutes(a);
+  const bm = timeStartMinutes(b);
+  if (am !== null && bm !== null && am !== bm) return am - bm;
+  if (am !== null && bm === null && b) return -1;
+  if (bm !== null && am === null && a) return 1;
+  if (a && b) return a.localeCompare(b);
+  if (a && !b) return -1;
+  if (!a && b) return 1;
+  return 0;
+}
+
 /** Earliest time string among tasks, or null if none are timed. */
 export function earliestTaskTime(tasks: readonly ParsedTask[]): string | null {
   let best: string | null = null;
   for (const t of tasks) {
     if (!t.time) continue;
-    if (best === null || t.time.localeCompare(best) < 0) best = t.time;
+    if (best === null || compareTimeStrings(t.time, best) < 0) best = t.time;
   }
   return best;
 }
 
-/** Same ordering rules as sortedGroups — used for DOM reinsert on un-toggle. */
-export function compareGroups(
+function compareTasksByStart(a: ParsedTask, b: ParsedTask): number {
+  const tc = compareTimeStrings(a.time, b.time);
+  if (tc !== 0) return tc;
+  const pc = a.filePath.localeCompare(b.filePath);
+  if (pc !== 0) return pc;
+  return a.line - b.line;
+}
+
+function groupSortKey(g: TaskGroup): GroupSortKey {
+  return { path: g.path, timed: g.timed, earliestTime: earliestTaskTime(g.tasks) };
+}
+
+/** Note priority only. Timed groups do not jump ahead of each other by time. */
+function compareByNotePriority(
   a: GroupSortKey,
   b: GroupSortKey,
   settings: TaskSortSettings,
   dateKey: string
 ): number {
-  const aTimed = a.timed === true;
-  const bTimed = b.timed === true;
-  if (settings.timeOverPriority && aTimed !== bTimed) return aTimed ? -1 : 1;
   const day = settings.dayOrder[dateKey] ?? [];
   const ad = dayOrderIndex(day, a.path, settings.priorities);
   const bd = dayOrderIndex(day, b.path, settings.priorities);
@@ -219,30 +252,64 @@ export function compareGroups(
   return a.path.localeCompare(b.path);
 }
 
-function groupTimedFlag(g: TaskGroup): boolean | null {
-  return g.timed;
+/** Same ordering rules as sortedGroups — used for DOM reinsert on un-toggle.
+    Two timed groups are ordered by start time, never by note priority. */
+export function compareGroups(
+  a: GroupSortKey,
+  b: GroupSortKey,
+  settings: TaskSortSettings,
+  dateKey: string
+): number {
+  const aTimed = a.timed === true;
+  const bTimed = b.timed === true;
+  if (aTimed && bTimed && (a.earliestTime || b.earliestTime)) {
+    const tc = compareTimeStrings(a.earliestTime, b.earliestTime);
+    if (tc !== 0) return tc;
+    return a.path.localeCompare(b.path);
+  }
+  if (settings.timeOverPriority && aTimed !== bTimed) return aTimed ? -1 : 1;
+  return compareByNotePriority(a, b, settings, dateKey);
 }
 
-/** Groups sorted by priority: per-day order first, then the global priority
-    list, then by earliest task time / path (same as the date index). Timed and
-    untimed tasks from the same note are separate buckets for sorting; adjacent
-    buckets of the same note are merged for display. When "time over priority"
-    is on, every timed subgroup sorts above every untimed one. */
+/** Timed groups stay in start-time order. Untimed notes follow priority.
+    With "time over priority" the timed block is first. Otherwise it sits where
+    the highest-priority timed note would, so an earlier task is not pushed
+    below a later one just because its note ranks lower. */
+function arrangeGroups(
+  groups: TaskGroup[],
+  settings: TaskSortSettings,
+  dateKey: string
+): TaskGroup[] {
+  const timed = groups.filter((g) => g.timed === true);
+  const untimed = groups.filter((g) => g.timed !== true);
+  const byPriority = (a: TaskGroup, b: TaskGroup) =>
+    compareByNotePriority(groupSortKey(a), groupSortKey(b), settings, dateKey);
+  timed.sort((a, b) => compareGroups(groupSortKey(a), groupSortKey(b), settings, dateKey));
+  untimed.sort(byPriority);
+  if (timed.length === 0 || untimed.length === 0 || settings.timeOverPriority) {
+    return [...timed, ...untimed];
+  }
+  const anchor = [...timed].sort(byPriority)[0];
+  let at = untimed.findIndex((u) => byPriority(anchor, u) < 0);
+  if (at < 0) at = untimed.length;
+  return [...untimed.slice(0, at), ...timed, ...untimed.slice(at)];
+}
+
+/** Groups sorted for the day list. Tasks with a time are ordered by when they
+    start, not by note priority. Untimed notes still follow the day order and
+    the global priority list. When "time over priority" is on, every timed
+    subgroup sorts above every untimed one. Adjacent buckets of the same note
+    are merged for display. */
 export function sortedGroups(
   settings: TaskSortSettings,
   tasks: ParsedTask[],
   dateKey: string
 ): TaskGroup[] {
   const groups = splitTimedGroups(tasks);
-  groups.sort((a, b) =>
-    compareGroups(
-      { path: a.path, timed: groupTimedFlag(a), earliestTime: earliestTaskTime(a.tasks) },
-      { path: b.path, timed: groupTimedFlag(b), earliestTime: earliestTaskTime(b.tasks) },
-      settings,
-      dateKey
-    )
-  );
-  return mergeAdjacentSameNoteGroups(groups);
+  for (const g of groups) {
+    if (g.timed === true) g.tasks.sort(compareTasksByStart);
+  }
+  return mergeAdjacentSameNoteGroups(arrangeGroups(groups, settings, dateKey));
 }
 
 /** Unique note paths in display order. */
@@ -317,7 +384,7 @@ export function findTaskInsertIndex(
   for (let i = 0; i < siblings.length; i++) {
     const other = siblings[i];
     if (task.time && other.time) {
-      const tc = task.time.localeCompare(other.time);
+      const tc = compareTimeStrings(task.time, other.time);
       if (tc < 0) return i;
       if (tc > 0) continue;
       if (task.line < other.line) return i;
@@ -342,14 +409,53 @@ export function findGroupInsertBefore(
   skip?: HTMLElement,
   taskRefs?: Map<string, ParsedTask>
 ): HTMLElement | null {
+  const present: TaskGroup[] = [];
   for (const g of siblings) {
     if (g === skip) continue;
-    const other: GroupSortKey = {
+    present.push({
       path: g.dataset.file || "",
+      tasks: [],
       timed: groupTimedFromEl(g),
-      earliestTime: taskRefs ? earliestTimeFromGroupEl(g, taskRefs) : null,
-    };
-    if (compareGroups(key, other, settings, dateKey) < 0) return g;
+    });
+    const last = present[present.length - 1];
+    const earliest = taskRefs ? earliestTimeFromGroupEl(g, taskRefs) : null;
+    if (earliest) {
+      last.tasks = [
+        {
+          filePath: last.path,
+          line: 0,
+          raw: "",
+          checked: false,
+          text: "",
+          tags: [],
+          time: earliest,
+          format: "legacy",
+        },
+      ];
+    }
   }
-  return null;
+  present.push({
+    path: key.path,
+    tasks: key.earliestTime
+      ? [
+          {
+            filePath: key.path,
+            line: 0,
+            raw: "",
+            checked: false,
+            text: "",
+            tags: [],
+            time: key.earliestTime,
+            format: "legacy",
+          },
+        ]
+      : [],
+    timed: key.timed,
+  });
+  const ordered = arrangeGroups(present, settings, dateKey);
+  const at = ordered.findIndex((g) => g === present[present.length - 1]);
+  const next = at >= 0 ? ordered[at + 1] : undefined;
+  if (!next) return null;
+  const nextIndex = present.indexOf(next);
+  return siblings.filter((g) => g !== skip)[nextIndex] ?? null;
 }
