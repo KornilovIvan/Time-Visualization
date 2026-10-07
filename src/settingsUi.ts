@@ -99,11 +99,8 @@ export class MultiSuggest extends AbstractInputSuggest<string> {
       if (token !== this.placeToken) return;
       container.classList.add("tv-path-suggest");
       const rect = this.input.getBoundingClientRect();
-      container.style.position = "fixed";
-      container.style.zIndex = "200";
       container.style.left = `${rect.left}px`;
       container.style.width = `${rect.width}px`;
-      container.style.minWidth = "0";
       container.style.top = `${rect.bottom + 4}px`;
     };
     requestAnimationFrame(() => {

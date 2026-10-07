@@ -170,6 +170,7 @@
 }
 
 .suggestion-container.tv-path-suggest {
+  position: fixed;
   z-index: 200;
   min-width: 0;
   padding: 2px;
