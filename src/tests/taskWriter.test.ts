@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { TFile } from "obsidian";
 import type { ParsedTask } from "../parser";
-import { clipRangeToNow, moveTask, toggleTask, updateTaskText } from "../taskWriter";
+import {
+  appendTaskLine,
+  clipRangeToNow,
+  formatNewTaskLine,
+  moveTask,
+  toggleTask,
+  updateTaskText,
+} from "../taskWriter";
 import type TimeVisualizationPlugin from "../main";
 
 type FakePlugin = TimeVisualizationPlugin & {
@@ -370,5 +377,55 @@ describe("line drift", () => {
         "\n"
       )
     );
+  });
+});
+
+describe("formatNewTaskLine", () => {
+  it("writes a legacy task with an optional time range", () => {
+    expect(formatNewTaskLine("подстричься", "2026-10-07", "18:00-19:00", "legacy")).toBe(
+      "- [ ] подстричься |[date:: 2026-10-07] |[time:: 18:00-19:00]"
+    );
+    expect(formatNewTaskLine("Buy milk", "2026-10-07", "", "legacy")).toBe(
+      "- [ ] Buy milk |[date:: 2026-10-07]"
+    );
+    expect(formatNewTaskLine("Meet", "2026-10-07", "15:30", "tasks")).toBe(
+      "- [ ] Meet 📅 2026-10-07 ⏰ 15:30"
+    );
+    expect(formatNewTaskLine("Buy milk\nand bread", "2026-10-07", "", "legacy")).toBe(
+      "- [ ] Buy milk and bread |[date:: 2026-10-07]"
+    );
+  });
+
+  it("rejects an empty text, a bad time, and a custom date pattern", () => {
+    expect(formatNewTaskLine("  ", "2026-10-07", "", "legacy")).toBeNull();
+    expect(formatNewTaskLine("Meet", "2026-10-07", "25:00", "legacy")).toBeNull();
+    expect(formatNewTaskLine("Meet", "2026-10-07", "", "custom")).toBeNull();
+  });
+});
+
+describe("appendTaskLine", () => {
+  it("appends the line at the end and keeps a trailing newline", async () => {
+    const plugin = makePlugin("- [ ] Old |[date:: 2026-10-07]\n");
+    const line = "- [ ] New |[date:: 2026-10-07] |[time:: 13:30-15:45]";
+    expect(await appendTaskLine(plugin, "note.md", line)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(
+      "- [ ] Old |[date:: 2026-10-07]\n- [ ] New |[date:: 2026-10-07] |[time:: 13:30-15:45]\n"
+    );
+  });
+
+  it("inserts a break when the file does not end with a newline", async () => {
+    const plugin = makePlugin("hello");
+    expect(await appendTaskLine(plugin, "note.md", "- [ ] New |[date:: 2026-10-07]")).toEqual({
+      ok: true,
+    });
+    expect(plugin.getContent()).toBe("hello\n- [ ] New |[date:: 2026-10-07]\n");
+  });
+
+  it("returns not-found when the note is missing", async () => {
+    const plugin = makePlugin("");
+    expect(await appendTaskLine(plugin, "gone.md", "- [ ] New")).toEqual({
+      ok: false,
+      reason: "not-found",
+    });
   });
 });

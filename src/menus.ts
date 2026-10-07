@@ -1,4 +1,5 @@
-import { setIcon } from "obsidian";
+import { Notice, setIcon } from "obsidian";
+import { MultiSuggest } from "./settingsUi";
 import type { ParsedTask } from "./parser";
 import { formatDate, parseDate } from "./parser";
 import { addDays, fileName } from "./dates";
@@ -6,7 +7,7 @@ import type { ViewHost } from "./viewHost";
 import { startEditTask } from "./taskRow";
 import { flipMove, syncActiveSection, syncTimedSection } from "./toggleAnimation";
 import { mountPriorityList } from "./priorityList";
-import { moveTask } from "./taskWriter";
+import { appendTaskLine, formatNewTaskLine, moveTask } from "./taskWriter";
 import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
 
 /** Day-priority row label: keep folder prefix so notes in a priority folder are distinct. */
@@ -48,6 +49,7 @@ export function showTaskMenu(
     return;
   }
   closeTaskMenu(view);
+  closeAddTaskMenu(view);
   // Opening a fresh menu — clear the "just closed" guard so the next click
   // on a task is not swallowed
   view.menuJustClosed = false;
@@ -165,6 +167,7 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
     return;
   }
   closePriorityMenu(view);
+  closeAddTaskMenu(view);
   // Opening a fresh menu — clear the "just closed" guard so the next click
   // is not swallowed
   view.menuJustClosed = false;
@@ -248,6 +251,7 @@ export function showNoteFilterMenu(view: ViewHost, anchor: HTMLElement): void {
   closeNoteFilterMenu(view);
   closeTaskMenu(view);
   closePriorityMenu(view);
+  closeAddTaskMenu(view);
   view.menuJustClosed = false;
   view.noteFilterAnchor = anchor;
   anchor.addClass("is-open");
@@ -325,4 +329,171 @@ export function showNoteFilterMenu(view: ViewHost, anchor: HTMLElement): void {
     document.removeEventListener("wheel", onWheel, true);
   };
   document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+}
+
+const addTaskPathSuggest = new WeakMap<ViewHost, MultiSuggest>();
+
+export function closeAddTaskMenu(view: ViewHost): void {
+  const suggest = addTaskPathSuggest.get(view);
+  if (suggest) {
+    suggest.close();
+    addTaskPathSuggest.delete(view);
+  }
+  if (view.addTaskMenu) {
+    view.addTaskMenu.remove();
+    view.addTaskMenu = null;
+  }
+  if (view.addTaskAnchor) view.addTaskAnchor.removeClass("is-open");
+  view.addTaskAnchor = null;
+}
+
+/** `YYYY-MM-DD` that is a real calendar day. */
+function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const [y, m, d] = value.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
+
+/** Typed path, with `.md` added when it was left off. */
+function notePathFromInput(raw: string): string {
+  const path = raw.trim().replace(/\\/g, "/").replace(/^\/+/, "");
+  if (!path) return "";
+  return path.toLowerCase().endsWith(".md") ? path : `${path}.md`;
+}
+
+/** Add a task on a chosen day. The line is appended to the note at the typed path. */
+export function showAddTaskMenu(view: ViewHost, anchor: HTMLElement): void {
+  if (view.addTaskMenu && view.addTaskAnchor === anchor) {
+    closeAddTaskMenu(view);
+    return;
+  }
+  closeAddTaskMenu(view);
+  closeNoteFilterMenu(view);
+  closeTaskMenu(view);
+  closePriorityMenu(view);
+  view.menuJustClosed = false;
+
+  if (view.plugin.settings.dateFormat === "custom") {
+    new Notice("Adding a task needs the inline-field or Tasks date format.");
+    return;
+  }
+
+  view.addTaskAnchor = anchor;
+  anchor.addClass("is-open");
+
+  const popup = createDiv();
+  popup.className = "tv-task-menu-popup tv-add-task-popup";
+
+  const textInput = popup.createEl("textarea", {
+    cls: "tv-add-task-input tv-add-task-text",
+    attr: { rows: "3", placeholder: "Task" },
+  });
+  const dateInput = popup.createEl("input", {
+    cls: "tv-add-task-input",
+    attr: { type: "date", value: formatDate(view.cursor) },
+  });
+  const timeInput = popup.createEl("input", {
+    cls: "tv-add-task-input",
+    attr: { type: "text", placeholder: "Time, optional (09:00 or 09:00-10:30)" },
+  });
+  const pathInput = popup.createEl("input", {
+    cls: "tv-add-task-input",
+    attr: { type: "text", placeholder: "Note path (Folder/Note.md)", value: view.lastAddNote ?? "" },
+  });
+  const notes = view.app.vault
+    .getMarkdownFiles()
+    .map((f) => f.path)
+    .filter((p) => view.index.acceptsPath(p))
+    .sort((a, b) => a.localeCompare(b));
+  const pathSuggest = new MultiSuggest(view.app, pathInput, notes, () => {}, "path", true);
+  addTaskPathSuggest.set(view, pathSuggest);
+  const error = popup.createDiv({ cls: "tv-add-task-error" });
+
+  const add = popup.createEl("button", { cls: "tv-btn tv-add-task-submit", text: "Add" });
+  const submit = async (): Promise<void> => {
+    const date = dateInput.value.trim();
+    if (!textInput.value.trim()) {
+      error.setText("Enter a task.");
+      return;
+    }
+    if (!isCalendarDate(date)) {
+      error.setText("Pick a date.");
+      return;
+    }
+    const line = formatNewTaskLine(textInput.value, date, timeInput.value, view.plugin.settings.dateFormat);
+    if (!line) {
+      error.setText("Time should look like 09:00 or 09:00-10:30.");
+      return;
+    }
+    const path = notePathFromInput(pathInput.value);
+    if (!path || !view.app.vault.getAbstractFileByPath(path)) {
+      error.setText("No note at that path.");
+      return;
+    }
+    if (!view.index.acceptsPath(path)) {
+      error.setText("That note is outside the calendar sources.");
+      return;
+    }
+    error.setText("");
+    const wrote = await appendTaskLine(view.plugin, path, line);
+    if (!wrote.ok) {
+      new Notice("Could not write the task.");
+      return;
+    }
+    view.lastAddNote = path;
+    closeAddTaskMenu(view);
+  };
+  add.addEventListener("click", (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    void submit();
+  });
+  textInput.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) {
+      ev.preventDefault();
+      void submit();
+    }
+  });
+  for (const input of [dateInput, timeInput]) {
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        void submit();
+      }
+    });
+  }
+  pathInput.addEventListener(
+    "keydown",
+    (ev) => {
+      if (ev.key !== "Enter") return;
+      const open = (pathSuggest as unknown as { isOpen?: boolean }).isOpen === true;
+      if (open) return;
+      ev.preventDefault();
+      void submit();
+    },
+    true
+  );
+
+  document.body.appendChild(popup);
+  view.addTaskMenu = popup;
+  const rect = anchor.getBoundingClientRect();
+  const popupW = popup.offsetWidth || 440;
+  const popupH = popup.offsetHeight;
+  let top = rect.bottom + 4;
+  if (top + popupH > window.innerHeight - 8) top = Math.max(8, rect.top - popupH - 4);
+  popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
+  popup.style.top = `${top}px`;
+  textInput.focus();
+
+  const close = (ev: MouseEvent): void => {
+    const target = ev.target;
+    if (target instanceof Node && popup.contains(target)) return;
+    if (target instanceof Node && anchor.contains(target)) return;
+    if (target instanceof Element && target.closest(".suggestion-container")) return;
+    view.menuJustClosed = true;
+    closeAddTaskMenu(view);
+    document.removeEventListener("mousedown", close, true);
+  };
+  document.addEventListener("mousedown", close, true);
 }

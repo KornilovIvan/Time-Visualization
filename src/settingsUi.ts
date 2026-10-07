@@ -7,19 +7,25 @@ export class MultiSuggest extends AbstractInputSuggest<string> {
   private input: HTMLInputElement;
   private query = "";
   private kind: "tag" | "path";
+  /** When set, picking a row fills the field instead of clearing it. */
+  private keepValue: boolean;
+  private placeToken = 0;
 
   constructor(
     app: App,
     inputEl: HTMLInputElement,
     items: string[],
     onPick: (value: string) => void,
-    kind: "tag" | "path" = "path"
+    kind: "tag" | "path" = "path",
+    keepValue = false
   ) {
     super(app, inputEl);
     this.items = items;
     this.onPick = onPick;
     this.input = inputEl;
     this.kind = kind;
+    this.keepValue = keepValue;
+    if (keepValue) this.limit = 0;
   }
 
   getSuggestions(query: string): string[] {
@@ -63,23 +69,55 @@ export class MultiSuggest extends AbstractInputSuggest<string> {
 
   renderSuggestion(value: string, el: HTMLElement): void {
     const label =
-      this.kind === "tag" ? "#" + value : (value.endsWith(".md") ? "📄 " : "📁 ") + value;
+      this.kind === "tag"
+        ? "#" + value
+        : this.keepValue
+          ? value
+          : (value.endsWith(".md") ? "📄 " : "📁 ") + value;
     const q = this.query;
     if (!q) {
       el.setText(label);
-      return;
+    } else {
+      const idx = label.toLowerCase().indexOf(q);
+      if (idx === -1) {
+        el.setText(label);
+      } else {
+        el.createSpan({ text: label.slice(0, idx) });
+        el.createSpan({ cls: "tv-suggest-highlight", text: label.slice(idx, idx + q.length) });
+        el.createSpan({ text: label.slice(idx + q.length) });
+      }
     }
-    const idx = label.toLowerCase().indexOf(q);
-    if (idx === -1) {
-      el.setText(label);
-      return;
-    }
-    el.createSpan({ text: label.slice(0, idx) });
-    el.createSpan({ cls: "tv-suggest-highlight", text: label.slice(idx, idx + q.length) });
-    el.createSpan({ text: label.slice(idx + q.length) });
+    if (!this.keepValue) return;
+    const container = el.closest(".suggestion-container");
+    if (container instanceof HTMLElement) this.schedulePlace(container);
+  }
+
+  /** Open just below the path field, on top of whatever is under the Add task window. */
+  private schedulePlace(container: HTMLElement): void {
+    const token = ++this.placeToken;
+    const place = (): void => {
+      if (token !== this.placeToken) return;
+      container.classList.add("tv-path-suggest");
+      const rect = this.input.getBoundingClientRect();
+      container.style.position = "fixed";
+      container.style.zIndex = "200";
+      container.style.left = `${rect.left}px`;
+      container.style.width = `${rect.width}px`;
+      container.style.minWidth = "0";
+      container.style.top = `${rect.bottom + 4}px`;
+    };
+    requestAnimationFrame(() => {
+      place();
+      requestAnimationFrame(place);
+    });
   }
 
   selectSuggestion(value: string): void {
+    if (this.keepValue) {
+      this.input.value = value;
+      this.close();
+      return;
+    }
     this.onPick(value);
     this.input.value = "";
     this.close();

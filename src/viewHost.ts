@@ -32,6 +32,10 @@ export interface ViewHost {
   noteFilter: string[];
   noteFilterMenu: HTMLElement | null;
   noteFilterAnchor: HTMLElement | null;
+  addTaskMenu: HTMLElement | null;
+  addTaskAnchor: HTMLElement | null;
+  /** Last note chosen in Add task, so the next one opens on it. */
+  lastAddNote: string | null;
   /** Day dial is open on the day cards. */
   clockOpen: boolean;
 

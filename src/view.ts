@@ -15,9 +15,11 @@ import {
 } from "./carousel";
 import { applyTaskToggled } from "./toggleAnimation";
 import {
+  closeAddTaskMenu,
   closeNoteFilterMenu,
   closePriorityMenu,
   closeTaskMenu,
+  showAddTaskMenu,
   showDayPriorityMenu,
   showNoteFilterMenu,
   showTaskMenu,
@@ -66,6 +68,9 @@ export class TimeVisualizationView extends ItemView {
   noteFilter: string[] = [];
   noteFilterMenu: HTMLElement | null = null;
   noteFilterAnchor: HTMLElement | null = null;
+  addTaskMenu: HTMLElement | null = null;
+  addTaskAnchor: HTMLElement | null = null;
+  lastAddNote: string | null = null;
   private noteFilterBtn: HTMLElement | null = null;
   /** Day dial shown above the task list. Stays on while swiping days. */
   clockOpen = false;
@@ -107,6 +112,7 @@ export class TimeVisualizationView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    closeAddTaskMenu(this);
     this.stopClockMotion();
     if (this.suppressTimer !== null) window.clearTimeout(this.suppressTimer);
     if (this.carouselAnim) {
@@ -258,6 +264,7 @@ export class TimeVisualizationView extends ItemView {
     closePriorityMenu(this);
     closeTaskMenu(this);
     closeNoteFilterMenu(this);
+    closeAddTaskMenu(this);
     if (resetToToday) this.cursor = startOfDay(new Date());
     this.level = level;
     this.render();
@@ -267,6 +274,7 @@ export class TimeVisualizationView extends ItemView {
     closePriorityMenu(this);
     closeTaskMenu(this);
     closeNoteFilterMenu(this);
+    closeAddTaskMenu(this);
     carouselStep(this, dir, getCarouselMeta(this, this.level));
   }
 
@@ -276,6 +284,7 @@ export class TimeVisualizationView extends ItemView {
     closePriorityMenu(this);
     closeTaskMenu(this);
     closeNoteFilterMenu(this);
+    closeAddTaskMenu(this);
     this.cursor = now;
     this.render();
   }
@@ -472,8 +481,18 @@ export class TimeVisualizationView extends ItemView {
     }
 
     const actions = header.createDiv({ cls: "tv-header-actions" });
+    this.addAddTaskButton(actions);
     this.addNoteFilterButton(actions);
     this.addSettingsButton(actions);
+  }
+
+  private addAddTaskButton(parent: HTMLElement): void {
+    const btn = parent.createEl("button", {
+      cls: "tv-btn tv-add-task",
+      attr: { "aria-label": "Add a task" },
+    });
+    btn.createSpan({ text: "Add task" });
+    btn.addEventListener("click", () => showAddTaskMenu(this, btn));
   }
 
   private addNoteFilterButton(parent: HTMLElement): void {

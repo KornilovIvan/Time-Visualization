@@ -1563,6 +1563,65 @@
   font-weight: 600;
 }
 
+.tv-add-task-popup {
+  width: 440px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tv-add-task-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--background-modifier-border);
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font: inherit;
+}
+
+.tv-add-task-text {
+  line-height: 1.4;
+  height: calc(1.4em * 3 + 14px);
+  min-height: calc(1.4em * 3 + 14px);
+  resize: vertical;
+}
+
+.tv-add-task-error {
+  min-height: 1.1em;
+  padding: 0 4px;
+  font-size: 0.8em;
+  color: var(--text-error, var(--text-accent));
+}
+
+.tv-add-task-error:empty {
+  display: none;
+}
+
+.tv-add-task-submit {
+  align-self: flex-end;
+}
+
+.suggestion-container.tv-path-suggest {
+  z-index: 200;
+  min-width: 0;
+  padding: 2px;
+  max-height: 9em;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.suggestion-container.tv-path-suggest .suggestion-item {
+  padding: 3px 8px;
+  font-size: 14px;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .tv-task-edit {
   flex: 1;
   min-width: 0;

@@ -153,6 +153,11 @@ export class TaskIndex {
     return this.byDate.get(date) ?? [];
   }
 
+  /** True when this path is a markdown note the source filter allows. */
+  acceptsPath(path: string): boolean {
+    return path.endsWith(".md") && this.matchesFile(path);
+  }
+
   /** Notes that currently contribute at least one dated task. */
   notePaths(): string[] {
     const paths = new Set<string>();

@@ -1,6 +1,13 @@
 import { TFile } from "obsidian";
+import { parseClockSpan } from "./clock";
 import type TimeVisualizationPlugin from "./main";
-import { DONE_FIELD_RE, LEGACY_DATE_FIELD_RE, parseTaskLine, type ParsedTask } from "./parser";
+import {
+  DONE_FIELD_RE,
+  LEGACY_DATE_FIELD_RE,
+  parseTaskLine,
+  type DateFormat,
+  type ParsedTask,
+} from "./parser";
 
 /** File writes for tasks. Kept separate from TaskIndex (read/cache only). */
 
@@ -250,6 +257,44 @@ export async function moveTask(
   task.raw = lines[lineIndex];
   task.date = newDate;
   await plugin.app.vault.modify(file, lines.join("\n"));
+  return OK;
+}
+
+/**
+ * One new task line for `date`, appended later to a note.
+ * `time` is optional (`HH:MM` or a range). Custom date patterns cannot be written.
+ * Returns null when the text is empty, the time is not a clock time, or the format is custom.
+ */
+export function formatNewTaskLine(
+  text: string,
+  date: string,
+  time: string | undefined,
+  format: DateFormat
+): string | null {
+  const body = text.replace(/\s*\n\s*/g, " ").trim();
+  if (!body || format === "custom") return null;
+  const when = time?.trim() ?? "";
+  if (when && !parseClockSpan(when)) return null;
+  if (format === "tasks") {
+    const timePart = when ? ` ⏰ ${when}` : "";
+    return `- [ ] ${body} 📅 ${date}${timePart}`;
+  }
+  const timePart = when ? ` |[time:: ${when}]` : "";
+  return `- [ ] ${body} |[date:: ${date}]${timePart}`;
+}
+
+/** Append `line` at the end of `path`. The file must already exist. */
+export async function appendTaskLine(
+  plugin: TimeVisualizationPlugin,
+  path: string,
+  line: string
+): Promise<TaskWriteResult> {
+  const file = plugin.app.vault.getAbstractFileByPath(path);
+  if (!(file instanceof TFile)) return { ok: false, reason: "not-found" };
+  const content = await plugin.app.vault.read(file);
+  const next =
+    content.length === 0 ? `${line}\n` : content.endsWith("\n") ? `${content}${line}\n` : `${content}\n${line}\n`;
+  await plugin.app.vault.modify(file, next);
   return OK;
 }
 
