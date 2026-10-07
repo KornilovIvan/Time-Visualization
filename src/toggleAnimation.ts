@@ -1,4 +1,4 @@
-import type { ParsedTask } from "./parser";
+import { completionStamp, type ParsedTask } from "./parser";
 import type { ViewHost } from "./viewHost";
 import { createTaskGroup } from "./taskGroup";
 import {
@@ -168,7 +168,7 @@ export function applyTaskToggled(
   if (box) box.classList.toggle("is-checked", t.checked);
   if (t.checked) {
     if (view.plugin.settings.recordDoneTime && !t.done) {
-      t.done = new Date().toISOString();
+      t.done = completionStamp(t.date);
     }
   } else {
     t.done = undefined;

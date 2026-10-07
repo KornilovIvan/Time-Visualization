@@ -149,6 +149,15 @@ export function parseTaskLine(
   };
 }
 
+/** Completion stamp for `[done::]`. Another day's task keeps that day:
+    the stamp is the end of it, so the date read back from the marker stays put. */
+export function completionStamp(taskDate: string | undefined, now = new Date()): string {
+  if (taskDate && /^\d{4}-\d{2}-\d{2}$/.test(taskDate) && taskDate !== formatDate(now)) {
+    return `${taskDate}T23:59:59`;
+  }
+  return now.toISOString();
+}
+
 export function formatDate(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");

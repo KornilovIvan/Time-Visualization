@@ -135,7 +135,7 @@ describe("toggleTask", () => {
     expect(plugin.getContent()).toBe("- [ ] Buy milk |[date:: 2026-01-05]");
   });
 
-  it("replaces [date::] with [done::] when completing a legacy task", async () => {
+  it("keeps a past day when completing: done is the end of that day", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-08-05T12:00:00.000Z"));
     const plugin = makePlugin("- [ ] Buy milk |[date:: 2026-01-05]", {
@@ -144,12 +144,23 @@ describe("toggleTask", () => {
     const t = task({ line: 0, format: "legacy", date: "2026-01-05", text: "Buy milk" });
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
-    expect(plugin.getContent()).toBe(
-      "- [x] Buy milk |[done:: 2026-08-05T12:00:00.000Z]"
-    );
+    expect(plugin.getContent()).toBe("- [x] Buy milk |[done:: 2026-01-05T23:59:59]");
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
-    expect(plugin.getContent()).toBe("- [ ] Buy milk |[date:: 2026-08-05]");
+    expect(plugin.getContent()).toBe("- [ ] Buy milk |[date:: 2026-01-05]");
+  });
+
+  it("stamps a task completed on its own day with the current time", async () => {
+    vi.useFakeTimers();
+    const now = new Date(2026, 7, 5, 15, 0, 0);
+    vi.setSystemTime(now);
+    const plugin = makePlugin("- [ ] Buy milk |[date:: 2026-08-05]", {
+      recordDoneTime: true,
+    });
+    const t = task({ line: 0, format: "legacy", date: "2026-08-05", text: "Buy milk" });
+
+    expect(await toggleTask(plugin, t)).toEqual({ ok: true });
+    expect(plugin.getContent()).toBe(`- [x] Buy milk |[done:: ${now.toISOString()}]`);
   });
 
   it("leaves a time range unchanged when early-complete trimming is off", async () => {
@@ -224,7 +235,7 @@ describe("toggleTask", () => {
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe(
-      "- [x] Ship 📅 2026-01-05 |[done:: 2026-08-05T12:00:00.000Z]"
+      "- [x] Ship 📅 2026-01-05 |[done:: 2026-01-05T23:59:59]"
     );
   });
 });

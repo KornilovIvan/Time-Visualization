@@ -4,6 +4,7 @@ import type TimeVisualizationPlugin from "./main";
 import {
   DONE_FIELD_RE,
   LEGACY_DATE_FIELD_RE,
+  completionStamp,
   parseTaskLine,
   type DateFormat,
   type ParsedTask,
@@ -185,7 +186,7 @@ export async function toggleTask(
       // Marking done — the [date:: ...] field becomes the [done:: ...] marker
       // (single date-like field, no duplicate entries). Other formats keep the
       // old behavior and just append the marker.
-      const now = new Date().toISOString();
+      const now = completionStamp(task.date);
       if (task.format === "legacy") {
         const dateRe = LEGACY_DATE_FIELD_RE;
         if (dateRe.test(lines[lineIndex])) {
