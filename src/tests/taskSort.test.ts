@@ -13,6 +13,7 @@ import {
   mergeAdjacentSameNoteGroups,
   priorityEntryMatches,
   sortedGroupPaths,
+  sharesTimedRun,
   sortedGroups,
   splitTimedGroups,
   type TaskGroup,
@@ -266,6 +267,23 @@ describe("compareGroups", () => {
   });
 });
 
+describe("sharesTimedRun", () => {
+  it("rejects a same-note task when another note starts between them", () => {
+    const early = task("Buffer.md", { line: 1, time: "14:00-15:30" });
+    const late = task("Buffer.md", { line: 2, time: "18:40-19:30" });
+    const middle = task("English B1.1.md", { line: 1, time: "15:30-18:40" });
+    expect(sharesTimedRun([early, middle], late, [early])).toBe(false);
+    expect(sharesTimedRun([middle, late], early, [late])).toBe(false);
+  });
+
+  it("accepts a same-note task when nothing starts between them", () => {
+    const early = task("Buffer.md", { line: 1, time: "14:00-15:00" });
+    const next = task("Buffer.md", { line: 2, time: "15:00-16:00" });
+    const later = task("Other.md", { time: "18:00-19:00" });
+    expect(sharesTimedRun([early, later], next, [early])).toBe(true);
+  });
+});
+
 describe("sortedGroups", () => {
   it("merges adjacent same-note buckets when timeOverPriority is off", () => {
     const groups = sortedGroups(
@@ -340,6 +358,39 @@ describe("sortedGroups", () => {
       { path: "A.md", timed: true },
       { path: "Z.md", timed: true },
       { path: "M.md", timed: false },
+    ]);
+  });
+
+  it("lets another note sit between two timed tasks from the same note", () => {
+    const groups = sortedGroups(
+      base,
+      [
+        task("Buffer.md", { line: 1, time: "14:00-15:30", text: "иду на англ" }),
+        task("Buffer.md", { line: 2, time: "18:40-19:30", text: "еду домой" }),
+        task("English B1.1.md", { line: 1, time: "15:30-18:40", text: "занятие" }),
+      ],
+      DAY
+    );
+    expect(groups.map((g) => ({ path: g.path, texts: g.tasks.map((t) => t.text) }))).toEqual([
+      { path: "Buffer.md", texts: ["иду на англ"] },
+      { path: "English B1.1.md", texts: ["занятие"] },
+      { path: "Buffer.md", texts: ["еду домой"] },
+    ]);
+  });
+
+  it("keeps back-to-back timed tasks from one note in a single block", () => {
+    const groups = sortedGroups(
+      base,
+      [
+        task("Buffer.md", { line: 1, time: "14:00-15:00", text: "a" }),
+        task("Buffer.md", { line: 2, time: "15:00-16:00", text: "b" }),
+        task("Other.md", { time: "18:00-19:00", text: "c" }),
+      ],
+      DAY
+    );
+    expect(groups.map((g) => ({ path: g.path, texts: g.tasks.map((t) => t.text), timed: g.timed }))).toEqual([
+      { path: "Buffer.md", texts: ["a", "b"], timed: true },
+      { path: "Other.md", texts: ["c"], timed: true },
     ]);
   });
 

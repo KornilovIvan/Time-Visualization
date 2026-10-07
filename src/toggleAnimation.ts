@@ -7,6 +7,7 @@ import {
   findGroupInsertBefore,
   findTaskInsertIndex,
   formatDoneAt,
+  sharesTimedRun,
 } from "./taskSort";
 
 export function fadeIn(el: HTMLElement, duration: number): void {
@@ -230,16 +231,40 @@ export function applyTaskToggled(
       const doneGroupTop = doneGroup ? doneGroup.getBoundingClientRect().top : 0;
       const activeList = listForReturn(slide, timed);
       if (activeList) {
-        // Prefer the matching timed/untimed bucket. Timed tasks must not fall
-        // into a merged (no data-timed) group — that bucket often sits among
-        // untimed notes when "time over priority" is on.
-        let group = activeList.querySelector<HTMLElement>(
-          ".tv-day-group[data-file=\"" + esc + "\"]" + timedSel
-        );
-        if (!group && !timed) {
+        // Join a same-note group only when no other note starts between this
+        // task and that group. Timed tasks must not fall into a merged
+        // (no data-timed) group — that bucket often sits among untimed notes
+        // when "time over priority" is on.
+        const listed = Array.from(activeList.querySelectorAll<HTMLElement>(".tv-day-group"));
+        const tasksIn = (g: HTMLElement): ParsedTask[] => {
+          const out: ParsedTask[] = [];
+          const root = g.querySelector(".tv-day-group-tasks");
+          if (!root) return out;
+          for (const child of Array.from(root.children) as HTMLElement[]) {
+            const other = child.dataset.taskKey ? view.taskRefs.get(child.dataset.taskKey) : undefined;
+            if (other) out.push(other);
+          }
+          return out;
+        };
+        const others = listed.flatMap(tasksIn);
+        let group: HTMLElement | null = null;
+        if (timed) {
+          group =
+            listed.find(
+              (g) =>
+                g.dataset.file === t.filePath &&
+                g.dataset.timed === "1" &&
+                sharesTimedRun(others, t, tasksIn(g))
+            ) ?? null;
+        } else {
           group = activeList.querySelector<HTMLElement>(
-            ".tv-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
+            ".tv-day-group[data-file=\"" + esc + "\"]" + timedSel
           );
+          if (!group) {
+            group = activeList.querySelector<HTMLElement>(
+              ".tv-day-group[data-file=\"" + esc + "\"]:not([data-timed])"
+            );
+          }
         }
         let createdGroup = false;
         const dateKey = slide.dataset.key ?? "";

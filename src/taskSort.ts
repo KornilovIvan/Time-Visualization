@@ -82,7 +82,7 @@ export function mergeAdjacentSameNoteGroups(groups: TaskGroup[]): TaskGroup[] {
     const prev = out[out.length - 1];
     if (prev && prev.path === g.path) {
       prev.tasks = prev.tasks.concat(g.tasks);
-      prev.timed = null;
+      if (prev.timed !== g.timed) prev.timed = null;
     } else {
       out.push({ path: g.path, tasks: g.tasks.slice(), timed: g.timed });
     }
@@ -295,9 +295,50 @@ function arrangeGroups(
   return [...untimed.slice(0, at), ...timed, ...untimed.slice(at)];
 }
 
+/** One group per timed task, so another note can sit between two tasks of the same note. */
+function expandTimedTasks(groups: TaskGroup[]): TaskGroup[] {
+  const out: TaskGroup[] = [];
+  for (const g of groups) {
+    if (g.timed !== true || g.tasks.length <= 1) {
+      out.push(g);
+      continue;
+    }
+    for (const t of g.tasks) out.push({ path: g.path, tasks: [t], timed: true });
+  }
+  return out;
+}
+
+function taskIdentity(t: Pick<ParsedTask, "filePath" | "line">): string {
+  return t.filePath + "\0" + t.line;
+}
+
+/** True when `task` and `groupTasks` are one same-note run: no other note starts between them. */
+export function sharesTimedRun(
+  others: readonly ParsedTask[],
+  task: ParsedTask,
+  groupTasks: readonly ParsedTask[]
+): boolean {
+  if (!task.time || groupTasks.length === 0) return false;
+  if (groupTasks.some((t) => t.filePath !== task.filePath || !t.time)) return false;
+  const byId = new Map<string, ParsedTask>();
+  for (const t of [...others, ...groupTasks, task]) {
+    if (t.time) byId.set(taskIdentity(t), t);
+  }
+  const pool = Array.from(byId.values()).sort(compareTasksByStart);
+  const idx = pool.findIndex((t) => taskIdentity(t) === taskIdentity(task));
+  if (idx < 0) return false;
+  let lo = idx;
+  while (lo > 0 && pool[lo - 1].filePath === task.filePath) lo--;
+  let hi = idx;
+  while (hi < pool.length - 1 && pool[hi + 1].filePath === task.filePath) hi++;
+  const run = new Set(pool.slice(lo, hi + 1).map(taskIdentity));
+  return groupTasks.some((t) => run.has(taskIdentity(t)));
+}
+
 /** Groups sorted for the day list. Tasks with a time are ordered by when they
-    start, not by note priority. Untimed notes still follow the day order and
-    the global priority list. When "time over priority" is on, every timed
+    start, not by note priority. Two timed tasks from one note stay apart when
+    another note starts between them. Untimed notes still follow the day order
+    and the global priority list. When "time over priority" is on, every timed
     subgroup sorts above every untimed one. Adjacent buckets of the same note
     are merged for display. */
 export function sortedGroups(
@@ -309,7 +350,7 @@ export function sortedGroups(
   for (const g of groups) {
     if (g.timed === true) g.tasks.sort(compareTasksByStart);
   }
-  return mergeAdjacentSameNoteGroups(arrangeGroups(groups, settings, dateKey));
+  return mergeAdjacentSameNoteGroups(arrangeGroups(expandTimedTasks(groups), settings, dateKey));
 }
 
 /** Unique note paths in display order. */
