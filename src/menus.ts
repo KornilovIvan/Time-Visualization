@@ -10,6 +10,67 @@ import { mountPriorityList } from "./priorityList";
 import { appendTaskLine, formatNewTaskLine, moveTask } from "./taskWriter";
 import { hasGlobalPriority, sortedGroupPaths } from "./taskSort";
 
+type MenuKind = "task" | "priority" | "notes" | "add";
+
+/** Outside-click / wheel listeners, one set per open menu.
+    They must be removed on every close path. Toggling the button used to
+    leave the old listener attached, and that listener then treated a click
+    inside the next menu as a click outside and closed it. */
+const menuDismissers = new WeakMap<ViewHost, Map<MenuKind, () => void>>();
+
+function clearMenuDismiss(view: ViewHost, kind: MenuKind): void {
+  const dismiss = menuDismissers.get(view)?.get(kind);
+  if (!dismiss) return;
+  dismiss();
+  menuDismissers.get(view)?.delete(kind);
+}
+
+function watchMenuDismiss(
+  view: ViewHost,
+  kind: MenuKind,
+  popup: HTMLElement,
+  anchor: HTMLElement | null,
+  closeMenu: () => void,
+  extra?: {
+    ignore?: (target: EventTarget | null) => boolean;
+    /** Replaces the default "any wheel closes the menu" listener. */
+    onWheel?: (ev: WheelEvent) => void;
+    /** No wheel listener. */
+    wheel?: false;
+  }
+): void {
+  clearMenuDismiss(view, kind);
+  const onMouseDown = (ev: MouseEvent): void => {
+    const target = ev.target;
+    if (target instanceof Node && popup.contains(target)) return;
+    if (anchor && target instanceof Node && anchor.contains(target)) return;
+    if (extra?.ignore?.(target)) return;
+    view.menuJustClosed = true;
+    closeMenu();
+  };
+  document.addEventListener("mousedown", onMouseDown, true);
+
+  let onWheel: ((ev: WheelEvent) => void) | null = null;
+  if (extra?.onWheel) {
+    onWheel = extra.onWheel;
+    document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  } else if (extra?.wheel !== false) {
+    onWheel = () => closeMenu();
+    document.addEventListener("wheel", onWheel, true);
+  }
+
+  const dismiss = (): void => {
+    document.removeEventListener("mousedown", onMouseDown, true);
+    if (onWheel) document.removeEventListener("wheel", onWheel, true);
+  };
+  let map = menuDismissers.get(view);
+  if (!map) {
+    map = new Map();
+    menuDismissers.set(view, map);
+  }
+  map.set(kind, dismiss);
+}
+
 /** Day-priority row label: keep folder prefix so notes in a priority folder are distinct. */
 function priorityLabel(path: string): string {
   if (!path.endsWith(".md")) return fileName(path) || path;
@@ -18,6 +79,7 @@ function priorityLabel(path: string): string {
 }
 
 export function closeTaskMenu(view: ViewHost): void {
+  clearMenuDismiss(view, "task");
   if (view.taskMenu) {
     view.taskMenu.remove();
     view.taskMenu = null;
@@ -26,6 +88,7 @@ export function closeTaskMenu(view: ViewHost): void {
 }
 
 export function closePriorityMenu(view: ViewHost): void {
+  clearMenuDismiss(view, "priority");
   if (view.priorityMenu) {
     view.priorityMenu.remove();
     view.priorityMenu = null;
@@ -83,27 +146,9 @@ export function showTaskMenu(
   popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
   popup.style.top = `${rect.bottom + 4}px`;
 
-  // Close on a click outside the popup; the following click event must not
-  // toggle a task (the user just wanted to dismiss the menu). Clicks on the
-  // anchor button are ignored here — its click handler toggles the menu.
-  const close = (ev: MouseEvent): void => {
-    if (popup.contains(ev.target as Node)) return;
-    if (anchor.contains(ev.target as Node)) return;
-    view.menuJustClosed = true;
-    closeTaskMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onScroll, true);
-  };
-  document.addEventListener("mousedown", close, true);
-
-  // Close when the user starts scrolling the task list — the menu must not
-  // stay floating over the content
-  const onScroll = (): void => {
-    closeTaskMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onScroll, true);
-  };
-  document.addEventListener("wheel", onScroll, true);
+  // Clicks on the anchor are ignored — its click handler toggles the menu.
+  // A click outside sets menuJustClosed so the same click does not toggle a task.
+  watchMenuDismiss(view, "task", popup, anchor, () => closeTaskMenu(view));
 }
 
 /** Moves a task to the next day: the row flies right while staying in the
@@ -211,27 +256,11 @@ export function showDayPriorityMenu(view: ViewHost, anchor: HTMLElement, dateKey
   popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
   popup.style.top = `${rect.bottom + 4}px`;
 
-  // Close on a click outside the popup; the following click event must not
-  // toggle a task (the user just wanted to dismiss the menu). Clicks on the
-  // anchor button are ignored here — its click handler toggles the menu.
-  const close = (ev: MouseEvent): void => {
-    if (popup.contains(ev.target as Node)) return;
-    if (anchor.contains(ev.target as Node)) return;
-    view.menuJustClosed = true;
-    closePriorityMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onScroll, true);
-  };
-  document.addEventListener("mousedown", close, true);
-  const onScroll = (): void => {
-    closePriorityMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onScroll, true);
-  };
-  document.addEventListener("wheel", onScroll, true);
+  watchMenuDismiss(view, "priority", popup, anchor, () => closePriorityMenu(view));
 }
 
 export function closeNoteFilterMenu(view: ViewHost): void {
+  clearMenuDismiss(view, "notes");
   if (view.noteFilterMenu) {
     view.noteFilterMenu.remove();
     view.noteFilterMenu = null;
@@ -306,34 +335,25 @@ export function showNoteFilterMenu(view: ViewHost, anchor: HTMLElement): void {
   popup.style.left = `${Math.max(4, rect.right - popupW)}px`;
   popup.style.top = `${rect.bottom + 4}px`;
 
-  const close = (ev: MouseEvent): void => {
-    if (popup.contains(ev.target as Node)) return;
-    if (anchor.contains(ev.target as Node)) return;
-    view.menuJustClosed = true;
-    closeNoteFilterMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onWheel, true);
-  };
-  document.addEventListener("mousedown", close, true);
   // Wheel inside the list scrolls the list. Closing here used to remove the
   // popup mid-event, so the same wheel then scrolled the day underneath.
-  const onWheel = (ev: WheelEvent): void => {
-    if (popup.contains(ev.target as Node)) {
-      ev.preventDefault();
-      ev.stopPropagation();
-      popup.scrollTop += ev.deltaY;
-      return;
-    }
-    closeNoteFilterMenu(view);
-    document.removeEventListener("mousedown", close, true);
-    document.removeEventListener("wheel", onWheel, true);
-  };
-  document.addEventListener("wheel", onWheel, { capture: true, passive: false });
+  watchMenuDismiss(view, "notes", popup, anchor, () => closeNoteFilterMenu(view), {
+    onWheel: (ev) => {
+      if (popup.contains(ev.target as Node)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        popup.scrollTop += ev.deltaY;
+        return;
+      }
+      closeNoteFilterMenu(view);
+    },
+  });
 }
 
 const addTaskPathSuggest = new WeakMap<ViewHost, MultiSuggest>();
 
 export function closeAddTaskMenu(view: ViewHost): void {
+  clearMenuDismiss(view, "add");
   const suggest = addTaskPathSuggest.get(view);
   if (suggest) {
     suggest.close();
@@ -486,14 +506,8 @@ export function showAddTaskMenu(view: ViewHost, anchor: HTMLElement): void {
   popup.style.top = `${top}px`;
   textInput.focus();
 
-  const close = (ev: MouseEvent): void => {
-    const target = ev.target;
-    if (target instanceof Node && popup.contains(target)) return;
-    if (target instanceof Node && anchor.contains(target)) return;
-    if (target instanceof Element && target.closest(".suggestion-container")) return;
-    view.menuJustClosed = true;
-    closeAddTaskMenu(view);
-    document.removeEventListener("mousedown", close, true);
-  };
-  document.addEventListener("mousedown", close, true);
+  watchMenuDismiss(view, "add", popup, anchor, () => closeAddTaskMenu(view), {
+    wheel: false,
+    ignore: (target) => target instanceof Element && !!target.closest(".suggestion-container"),
+  });
 }

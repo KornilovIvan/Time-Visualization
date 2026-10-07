@@ -112,6 +112,9 @@ export class TimeVisualizationView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    closeTaskMenu(this);
+    closePriorityMenu(this);
+    closeNoteFilterMenu(this);
     closeAddTaskMenu(this);
     this.stopClockMotion();
     if (this.suppressTimer !== null) window.clearTimeout(this.suppressTimer);
