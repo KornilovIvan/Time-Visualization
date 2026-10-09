@@ -441,7 +441,10 @@ export function showAddTaskMenu(view: ViewHost, anchor: HTMLElement): void {
       error.setText("Pick a date.");
       return;
     }
-    const line = formatNewTaskLine(textInput.value, date, timeInput.value, view.plugin.settings.dateFormat);
+    const line = formatNewTaskLine(textInput.value, date, timeInput.value, view.plugin.settings.dateFormat, {
+      dateField: view.plugin.settings.dateField,
+      timeField: view.plugin.settings.timeField,
+    });
     if (!line) {
       error.setText("Time should look like 09:00 or 09:00-10:30.");
       return;

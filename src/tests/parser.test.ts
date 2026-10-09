@@ -71,6 +71,26 @@ describe("parseTaskLine", () => {
       expect(t?.text).toBe("Empty");
     });
 
+    it("reads a date field with or without a leading bar", () => {
+      expect(parse("- [ ] Meet [date:: 2026-08-05] [time:: 09:30]")).toMatchObject({
+        text: "Meet",
+        date: "2026-08-05",
+        time: "09:30",
+      });
+    });
+
+    it("reads a custom date and time pattern", () => {
+      const t = parseTaskLine(
+        "- [ ] Meet |[date:: 2026-08-05] |[time:: 09:30]",
+        FILE,
+        3,
+        "legacy",
+        "",
+        { dateField: "|[date:: {date}]", timeField: "|[time:: {time}]" }
+      );
+      expect(t).toMatchObject({ text: "Meet", date: "2026-08-05", time: "09:30" });
+    });
+
     it("allows spaces around the field name and ::", () => {
       const t = parse("- [ ] Meet |[date :: 2026-08-05] |[ time :: 09:30 ]");
       expect(t).toMatchObject({

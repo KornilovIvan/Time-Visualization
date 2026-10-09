@@ -30,6 +30,8 @@ describe("normalizeLoadedSettings", () => {
     expect(settings.openOnStartup).toBe(false);
     expect(settings.trimEndOnComplete).toBe(false);
     expect(settings.customDateRegex).toBe("");
+    expect(settings.dateField).toBe("[date:: {date}]");
+    expect(settings.timeField).toBe("[time:: {time}]");
   });
 
   it("migrates legacy priorities object to an empty array", () => {
@@ -62,6 +64,13 @@ describe("normalizeLoadedSettings", () => {
       sources: [],
       includeTags: [],
     });
+  });
+
+  it("falls back when a field pattern has no placeholder", () => {
+    expect(
+      normalizeLoadedSettings({ dateField: "just text", timeField: "" }).dateField
+    ).toBe("[date:: {date}]");
+    expect(normalizeLoadedSettings({ timeField: "no token" }).timeField).toBe("[time:: {time}]");
   });
 
   it("keeps a valid priorities array", () => {

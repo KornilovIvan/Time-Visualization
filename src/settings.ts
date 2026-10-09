@@ -5,7 +5,7 @@ import {
   Setting,
 } from "obsidian";
 import type TimeVisualizationPlugin from "./main";
-import { DateFormat } from "./parser";
+import { DateFormat, fieldTemplate } from "./parser";
 import { buildMultiSelect, buildPriorityList } from "./settingsUi";
 
 export interface TimeVisualizationSettings {
@@ -17,6 +17,10 @@ export interface TimeVisualizationSettings {
   dateFormat: DateFormat;
   /** Custom regex with named groups "date" and "time" (used when dateFormat = "custom") */
   customDateRegex: string;
+  /** How an inline date is read and written. `{date}` stands for the day. */
+  dateField: string;
+  /** How an inline time is read and written. `{time}` stands for the clock time. */
+  timeField: string;
   /** Write a [done:: ...] marker on completion so the done order survives reloads */
   recordDoneTime: boolean;
   /** When completing a task before its scheduled end, cut the range end to that minute */
@@ -37,6 +41,8 @@ export const DEFAULT_SETTINGS: TimeVisualizationSettings = {
   includeTags: [],
   dateFormat: "legacy",
   customDateRegex: "",
+  dateField: "[date:: {date}]",
+  timeField: "[time:: {time}]",
   // Off by default: the plugin must not write into task lines until the user
   // explicitly enables it in Settings
   recordDoneTime: false,
@@ -73,6 +79,8 @@ export function normalizeLoadedSettings(
   if (!Array.isArray(settings.includeTags)) {
     settings.includeTags = [];
   }
+  settings.dateField = fieldTemplate(settings.dateField, "date");
+  settings.timeField = fieldTemplate(settings.timeField, "time");
   return settings;
 }
 
@@ -154,6 +162,42 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
         // (blur/Enter) — a full rescan per keystroke would lag on big vaults
         t.onChange(async (v) => {
           this.plugin.settings.customDateRegex = v;
+          await this.plugin.saveSettings();
+        });
+        t.inputEl.addEventListener("blur", () => {
+          void this.plugin.reload();
+        });
+        t.inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Date field")
+      .setDesc("Inline fields only. How a date is recognized and how it is written when a task is added or edited. {date} is the day. Default: [date:: {date}]. A leading | is not added unless you put it in the pattern, for example |[date:: {date}].")
+      .addText((t) => {
+        t.setValue(this.plugin.settings.dateField);
+        t.inputEl.placeholder = "[date:: {date}]";
+        t.onChange(async (v) => {
+          this.plugin.settings.dateField = v;
+          await this.plugin.saveSettings();
+        });
+        t.inputEl.addEventListener("blur", () => {
+          void this.plugin.reload();
+        });
+        t.inputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+        });
+      });
+
+    new Setting(containerEl)
+      .setName("Time field")
+      .setDesc("Inline fields only. How a time is recognized and written. {time} is the clock time or range. Default: [time:: {time}].")
+      .addText((t) => {
+        t.setValue(this.plugin.settings.timeField);
+        t.inputEl.placeholder = "[time:: {time}]";
+        t.onChange(async (v) => {
+          this.plugin.settings.timeField = v;
           await this.plugin.saveSettings();
         });
         t.inputEl.addEventListener("blur", () => {

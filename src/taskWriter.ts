@@ -5,7 +5,11 @@ import {
   DONE_FIELD_RE,
   LEGACY_DATE_FIELD_RE,
   completionStamp,
+  doneFieldTemplate,
+  fieldTemplate,
+  fieldValueRegExp,
   parseTaskLine,
+  renderField,
   type DateFormat,
   type ParsedTask,
 } from "./parser";
@@ -61,8 +65,15 @@ export function clipRangeToNow(value: string, nowMin: number): string | null {
 }
 
 /** Rewrite a scheduled range on the line when it is completed early. */
-function clipLineTime(line: string, now: Date): string {
+function clipLineTime(line: string, now: Date, timeField: string): string {
   const nowMin = now.getHours() * 60 + now.getMinutes();
+  const template = fieldValueRegExp(timeField, "time");
+  const templated = template?.exec(line);
+  if (template && templated?.[1]) {
+    const next = clipRangeToNow(templated[1], nowMin);
+    if (!next) return line;
+    return line.replace(template, timeField.split("{time}").join(next));
+  }
   const field = TIME_FIELD_RE.exec(line);
   if (field) {
     const next = clipRangeToNow(field[1], nowMin);
@@ -112,7 +123,11 @@ function lineMatchesTask(
     task.filePath,
     index,
     task.format,
-    plugin.settings.customDateRegex
+    plugin.settings.customDateRegex,
+    {
+      dateField: plugin.settings.dateField,
+      timeField: plugin.settings.timeField,
+    }
   );
   return !!parsed && sameTaskIdentity(parsed, task);
 }
@@ -169,37 +184,42 @@ export async function toggleTask(
   // is modified solely for the checkbox
   if (plugin.settings.recordDoneTime) {
     if (checked) {
-      // Returning the task to open — turn [done:: ...] back into [date:: ...]
-      // so the date is restored and fields never duplicate
-      const doneRe = DONE_FIELD_RE;
+      // Returning the task to open — turn the done marker back into the date
+      // field so the date is restored and fields never duplicate
+      const dateTpl = fieldTemplate(plugin.settings.dateField, "date");
+      const doneRe = fieldValueRegExp(doneFieldTemplate(dateTpl), "done") ?? DONE_FIELD_RE;
       const dm = doneRe.exec(lines[lineIndex]);
       if (dm) {
         const doneVal = dm[1].trim();
         const datePart = /^\d{4}-\d{2}-\d{2}/.test(doneVal) ? doneVal.slice(0, 10) : "";
         lines[lineIndex] = lines[lineIndex].replace(
           doneRe,
-          datePart ? `[date:: ${datePart}]` : ""
+          datePart ? renderField(dateTpl, "date", datePart).trim() : ""
         );
       }
       lines[lineIndex] = lines[lineIndex].replace(/(?:\s*\|)+\s*$/g, "").trimEnd();
     } else {
-      // Marking done — the [date:: ...] field becomes the [done:: ...] marker
-      // (single date-like field, no duplicate entries). Other formats keep the
-      // old behavior and just append the marker.
+      // Marking done — the date field becomes the done marker (one field, no
+      // duplicates). The marker uses the same wrapping as the date field.
       const now = completionStamp(task.date);
+      const dateTpl = fieldTemplate(plugin.settings.dateField, "date");
+      const doneRendered = renderField(doneFieldTemplate(dateTpl), "done", now);
       if (task.format === "legacy") {
-        const dateRe = LEGACY_DATE_FIELD_RE;
-        if (dateRe.test(lines[lineIndex])) {
-          lines[lineIndex] = lines[lineIndex].replace(dateRe, `[done:: ${now}]`);
+        const dateRe = fieldValueRegExp(dateTpl, "date");
+        if (dateRe && dateRe.test(lines[lineIndex])) {
+          lines[lineIndex] = lines[lineIndex].replace(dateRe, doneRendered.trim());
+        } else if (LEGACY_DATE_FIELD_RE.test(lines[lineIndex])) {
+          lines[lineIndex] = lines[lineIndex].replace(LEGACY_DATE_FIELD_RE, `[done:: ${now}]`);
         } else {
-          lines[lineIndex] = lines[lineIndex].trimEnd() + ` |[done:: ${now}]`;
+          lines[lineIndex] = lines[lineIndex].trimEnd() + doneRendered;
         }
       } else {
         lines[lineIndex] =
           lines[lineIndex]
             .replace(new RegExp(DONE_FIELD_RE.source, "g"), "")
             .replace(/(?:\s*\|)+\s*$/g, "")
-            .trimEnd() + ` |[done:: ${now}]`;
+            .trimEnd() +
+          renderField(doneFieldTemplate(fieldTemplate(plugin.settings.dateField, "date")), "done", now);
       }
     }
   }
@@ -207,7 +227,11 @@ export async function toggleTask(
   // Independent of the done marker: only when completing, and only while the
   // scheduled range is still open. Unchecking leaves the written time as it is.
   if (!checked && plugin.settings.trimEndOnComplete) {
-    const clipped = clipLineTime(lines[lineIndex], new Date());
+    const clipped = clipLineTime(
+      lines[lineIndex],
+      new Date(),
+      fieldTemplate(plugin.settings.timeField, "time")
+    );
     if (clipped !== lines[lineIndex]) {
       lines[lineIndex] = clipped;
       const field = TIME_FIELD_RE.exec(clipped);
@@ -250,7 +274,8 @@ export async function moveTask(
     if (dateRe.test(line)) {
       lines[lineIndex] = line.replace(dateRe, `[date:: ${newDate}]`);
     } else {
-      lines[lineIndex] = line.trimEnd() + ` |[date:: ${newDate}]`;
+      lines[lineIndex] =
+        line.trimEnd() + renderField(fieldTemplate(plugin.settings.dateField, "date"), "date", newDate);
     }
   }
 
@@ -270,7 +295,8 @@ export function formatNewTaskLine(
   text: string,
   date: string,
   time: string | undefined,
-  format: DateFormat
+  format: DateFormat,
+  fields?: { dateField?: string; timeField?: string }
 ): string | null {
   const body = text.replace(/\s*\n\s*/g, " ").trim();
   if (!body || format === "custom") return null;
@@ -280,8 +306,9 @@ export function formatNewTaskLine(
     const timePart = when ? ` ⏰ ${when}` : "";
     return `- [ ] ${body} 📅 ${date}${timePart}`;
   }
-  const timePart = when ? ` |[time:: ${when}]` : "";
-  return `- [ ] ${body} |[date:: ${date}]${timePart}`;
+  const datePart = renderField(fieldTemplate(fields?.dateField, "date"), "date", date);
+  const timePart = when ? renderField(fieldTemplate(fields?.timeField, "time"), "time", when) : "";
+  return `- [ ] ${body}${datePart}${timePart}`;
 }
 
 /** Append `line` at the end of `path`. The file must already exist. */
@@ -327,17 +354,22 @@ export async function updateTaskText(
     datePart = task.date ? ` 📅 ${task.date}` : "";
     timePart = task.time ? ` ⏰ ${task.time}` : "";
   } else if (task.format === "legacy") {
-    timePart = task.time ? ` |[time:: ${task.time}]` : "";
+    const dateTpl = fieldTemplate(plugin.settings.dateField, "date");
+    const timeTpl = fieldTemplate(plugin.settings.timeField, "time");
+    timePart = task.time ? renderField(timeTpl, "time", task.time) : "";
     if (checked && task.done) {
       // A done task carries the completion marker as its date field —
       // writing [date::] and [done::] together would duplicate the entry
-      datePart = ` |[done:: ${task.done}]`;
+      datePart = renderField(doneFieldTemplate(dateTpl), "done", task.done);
     } else {
-      datePart = task.date ? ` |[date:: ${task.date}]` : "";
+      datePart = task.date ? renderField(dateTpl, "date", task.date) : "";
     }
   }
   // Non-legacy formats keep the completion marker appended after the date
-  const donePart = task.format !== "legacy" && task.done ? ` |[done:: ${task.done}]` : "";
+  const donePart =
+    task.format !== "legacy" && task.done
+      ? renderField(doneFieldTemplate(fieldTemplate(plugin.settings.dateField, "date")), "done", task.done)
+      : "";
   // The space between marker and checkbox is required, otherwise the line
   // stops being recognized as a task
   lines[lineIndex] =

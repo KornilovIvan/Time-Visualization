@@ -24,7 +24,8 @@ export class TaskIndex {
   }
 
   private formatKey(): string {
-    return `${this.plugin.settings.dateFormat}|${this.plugin.settings.customDateRegex}`;
+    const s = this.plugin.settings;
+    return `${s.dateFormat}|${s.customDateRegex}|${s.dateField}|${s.timeField}`;
   }
 
   async refresh(): Promise<void> {
@@ -99,7 +100,10 @@ export class TaskIndex {
     const format = this.plugin.settings.dateFormat;
     const custom = this.plugin.settings.customDateRegex;
     for (let i = 0; i < lines.length; i++) {
-      const t = parseTaskLine(lines[i], filePath, i, format, custom);
+      const t = parseTaskLine(lines[i], filePath, i, format, custom, {
+        dateField: this.plugin.settings.dateField,
+        timeField: this.plugin.settings.timeField,
+      });
       if (t) tasks.push(t);
     }
     return tasks;

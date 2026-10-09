@@ -235,7 +235,7 @@ describe("toggleTask", () => {
 
     expect(await toggleTask(plugin, t)).toEqual({ ok: true });
     expect(plugin.getContent()).toBe(
-      "- [x] Ship 📅 2026-01-05 |[done:: 2026-01-05T23:59:59]"
+      "- [x] Ship 📅 2026-01-05 [done:: 2026-01-05T23:59:59]"
     );
   });
 });
@@ -273,7 +273,7 @@ describe("moveTask", () => {
     ).toEqual({
       ok: true,
     });
-    expect(plugin.getContent()).toBe("- [ ] No date yet |[date:: 2026-03-01]");
+    expect(plugin.getContent()).toBe("- [ ] No date yet [date:: 2026-03-01]");
   });
 
   it("rewrites tasks-format emoji dates", async () => {
@@ -303,7 +303,7 @@ describe("updateTaskText", () => {
     });
     expect(await updateTaskText(plugin, t, "New text")).toEqual({ ok: true });
     expect(plugin.getContent()).toBe(
-      "- [ ] New text #work |[date:: 2026-01-05] |[time:: 09:00]"
+      "- [ ] New text #work [date:: 2026-01-05] [time:: 09:00]"
     );
   });
 
@@ -330,7 +330,7 @@ describe("updateTaskText", () => {
       date: "2026-01-05",
     });
     expect(await updateTaskText(plugin, t, "Still quoted")).toEqual({ ok: true });
-    expect(plugin.getContent()).toBe("> - [ ] Still quoted |[date:: 2026-01-05]");
+    expect(plugin.getContent()).toBe("> - [ ] Still quoted [date:: 2026-01-05]");
   });
 });
 
@@ -394,16 +394,22 @@ describe("line drift", () => {
 describe("formatNewTaskLine", () => {
   it("writes a legacy task with an optional time range", () => {
     expect(formatNewTaskLine("подстричься", "2026-10-07", "18:00-19:00", "legacy")).toBe(
-      "- [ ] подстричься |[date:: 2026-10-07] |[time:: 18:00-19:00]"
+      "- [ ] подстричься [date:: 2026-10-07] [time:: 18:00-19:00]"
     );
     expect(formatNewTaskLine("Buy milk", "2026-10-07", "", "legacy")).toBe(
-      "- [ ] Buy milk |[date:: 2026-10-07]"
+      "- [ ] Buy milk [date:: 2026-10-07]"
     );
+    expect(
+      formatNewTaskLine("Buy milk", "2026-10-07", "09:00", "legacy", {
+        dateField: "|[date:: {date}]",
+        timeField: "|[time:: {time}]",
+      })
+    ).toBe("- [ ] Buy milk |[date:: 2026-10-07] |[time:: 09:00]");
     expect(formatNewTaskLine("Meet", "2026-10-07", "15:30", "tasks")).toBe(
       "- [ ] Meet 📅 2026-10-07 ⏰ 15:30"
     );
     expect(formatNewTaskLine("Buy milk\nand bread", "2026-10-07", "", "legacy")).toBe(
-      "- [ ] Buy milk and bread |[date:: 2026-10-07]"
+      "- [ ] Buy milk and bread [date:: 2026-10-07]"
     );
   });
 
