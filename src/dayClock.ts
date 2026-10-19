@@ -250,10 +250,6 @@ function blockEl(event: ClockEvent, cycle: number): SVGGElement {
     group.appendChild(arc);
   }
 
-  const title = svgEl("title");
-  title.textContent = `${group.dataset.when} ${event.label}`.trim();
-  group.appendChild(title);
-
   const tipText = `${group.dataset.when} ${group.dataset.label}`.trim();
   const showTip = (ev: PointerEvent): void => {
     group.classList.add("is-hot");
@@ -311,14 +307,11 @@ export function repaintClockTask(root: ParentNode, task: ClockTask): void {
       return;
     }
     arcs.forEach((arc) => arc.remove());
-    const title = block.querySelector("title");
-    if (title) title.textContent = `${block.dataset.when} ${event.label}`.trim();
     for (const draw of event.draws) {
       const arc = svgEl("path");
       arc.setAttribute("class", "tv-clock-arc");
       paint(arc, draw);
-      if (title) block.insertBefore(arc, title);
-      else block.appendChild(arc);
+      block.appendChild(arc);
     }
   });
 }
