@@ -98,7 +98,11 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
 
     const sources = this.plugin.collectSources();
     const tags = this.plugin.collectTags();
+    const heading = (name: string): void => {
+      new Setting(containerEl).setName(name).setHeading();
+    };
 
+    heading("Sources");
     new Setting(containerEl)
       .setName("Sources (folders and notes)")
       .setDesc("Folders (path without extension) and full note paths. Empty = whole vault.")
@@ -136,6 +140,7 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
         );
       });
 
+    heading("Task format");
     new Setting(containerEl)
       .setName("Date format")
       .setDesc("How task dates are read: legacy inline fields ([date:: ...]), Obsidian Tasks emoji fields (📅 ...), or a custom regex.")
@@ -208,6 +213,7 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
         });
       });
 
+    heading("Completion");
     new Setting(containerEl)
       .setName("Record completion time")
       .setDesc("On completion the [date:: ...] field is replaced with a [done:: <time>] marker (one field, no duplicates) and done tasks keep their completion order. If you return a task to open outside this view (in the editor), the [done:: ...] marker stays in the line — the plugin restores [date:: ...] only when you toggle the task here. Turn off if you don't want the plugin to modify your task lines.")
@@ -228,16 +234,7 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
         })
       );
 
-    new Setting(containerEl)
-      .setName("Open view on startup")
-      .setDesc("Open the time visualization view automatically every time Obsidian starts.")
-      .addToggle((tg) =>
-        tg.setValue(this.plugin.settings.openOnStartup).onChange(async (v) => {
-          this.plugin.settings.openOnStartup = v;
-          await this.plugin.saveSettings();
-        })
-      );
-
+    heading("Order");
     new Setting(containerEl)
       .setName("Priority")
       .setDesc("The order of the list is the priority: the first entry is highest. You can add a note or a folder — a folder applies to all notes inside it. Notes not covered by the list stay at the bottom of the day view. You can also reorder from the day header in the view.")
@@ -264,6 +261,17 @@ export class TimeVisualizationSettingTab extends PluginSettingTab {
           this.plugin.settings.timeOverPriority = v;
           await this.plugin.saveSettings();
           this.plugin.getView()?.redraw();
+        })
+      );
+
+    heading("View");
+    new Setting(containerEl)
+      .setName("Open view on startup")
+      .setDesc("Open the time visualization view automatically every time Obsidian starts.")
+      .addToggle((tg) =>
+        tg.setValue(this.plugin.settings.openOnStartup).onChange(async (v) => {
+          this.plugin.settings.openOnStartup = v;
+          await this.plugin.saveSettings();
         })
       );
 
