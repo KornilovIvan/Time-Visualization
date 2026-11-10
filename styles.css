@@ -634,6 +634,7 @@
   min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease, box-shadow 120ms ease, transform 160ms ease, opacity 160ms ease;
 }

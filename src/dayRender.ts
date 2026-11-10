@@ -72,6 +72,8 @@ export function fillMonthSlide(view: ViewHost, slide: HTMLElement, first: Date):
   }
 
   const grid = body.createDiv({ cls: "tv-month-grid" });
+  // Month cells are short: a normal wheel tick jumps past several tasks.
+  grid.addEventListener("wheel", onMonthCellWheel, { passive: false });
 
   const frag = document.createDocumentFragment();
   for (let i = 0; i < totalCells; i++) {
@@ -149,6 +151,50 @@ export function fillDayCard(view: ViewHost, card: HTMLElement, day: Date): void 
     layout.createDiv({ cls: "tv-day-timed-list" });
   }
   fillDayBody(view, card, day);
+}
+
+/** Slow enough that a mouse notch moves about two task rows, not half the cell. */
+const MONTH_CELL_SCROLL = 0.32;
+
+type MonthCellScroll = { pos: number; raf: number };
+const monthCellScroll = new WeakMap<HTMLElement, MonthCellScroll>();
+
+function monthCellMaxScroll(cell: HTMLElement): number {
+  return Math.max(0, cell.scrollHeight - cell.clientHeight);
+}
+
+function flushMonthCellScroll(cell: HTMLElement): void {
+  const state = monthCellScroll.get(cell);
+  if (!state) return;
+  state.raf = 0;
+  if (!cell.isConnected) return;
+  const max = monthCellMaxScroll(cell);
+  state.pos = Math.max(0, Math.min(max, state.pos));
+  cell.scrollTop = state.pos;
+}
+
+function onMonthCellWheel(ev: WheelEvent): void {
+  if (ev.ctrlKey) return;
+  const grid = ev.currentTarget;
+  if (!(grid instanceof HTMLElement)) return;
+  const cell = (ev.target as HTMLElement | null)?.closest(".tv-month-cell");
+  if (!(cell instanceof HTMLElement) || !grid.contains(cell)) return;
+  const max = monthCellMaxScroll(cell);
+  if (max <= 0) return;
+  let dy = ev.deltaY;
+  if (ev.deltaMode === WheelEvent.DOM_DELTA_LINE) dy *= 16;
+  else if (ev.deltaMode === WheelEvent.DOM_DELTA_PAGE) dy *= cell.clientHeight;
+  ev.preventDefault();
+  ev.stopPropagation();
+  let state = monthCellScroll.get(cell);
+  if (!state) {
+    state = { pos: cell.scrollTop, raf: 0 };
+    monthCellScroll.set(cell, state);
+  } else if (!state.raf) {
+    state.pos = cell.scrollTop;
+  }
+  state.pos += dy * MONTH_CELL_SCROLL;
+  if (!state.raf) state.raf = window.requestAnimationFrame(() => flushMonthCellScroll(cell));
 }
 
 /** Clicking a week/month day card opens that day. Task clicks and drag-selections do not. */
